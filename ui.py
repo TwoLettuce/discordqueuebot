@@ -155,19 +155,20 @@ class TAView(discord.ui.View):
 
     @discord.ui.button(label="Student Info", style=discord.ButtonStyle.red, custom_id="student_info")
     async def student_info(self, interaction: discord.Interaction, button):
-        info: list = get_student_info()
+        info: tuple = get_student_info()
         builder: str = "```Student Info:\n"
-        width: int = 50
+        width: int = 25
         for type in info[0]:
-            builder += fixed_width(str(type), width)
+            builder += fixed_width(str(type), width) + ("\n" if info[0].index(type) == len(info[0])-1 else "| ")
+        for _ in range(width * len(info[0])):
+            builder += "-" 
         builder += "\n"
         for student in info[1]: 
             for item in student:
-                builder += fixed_width(str(item), width)
-            builder += "\n"
+                builder += fixed_width(str(item), width) + ("\n" if student.index(item) == len(student)-1 else "| ")
         
         builder+="```"
-        await interaction.response.send_message(builder)
+        await interaction.response.send_message(builder, ephemeral=True)
 
 def fixed_width(text: str, width: int) -> str:
     if len(text) > width:
