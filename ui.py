@@ -145,8 +145,8 @@ class TAView(discord.ui.View):
         if not entry:
             return await interaction.response.send_message("Queue is empty.", ephemeral=True)
 
-        
-        increment_help(entry.user_id, entry.username)
+        if not entry.is_passoff:
+            increment_help(entry.user_id, entry.username)
 
         await interaction.response.send_message(
             f"{entry.username} is next. Go help them!",
