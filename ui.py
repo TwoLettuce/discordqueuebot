@@ -44,7 +44,7 @@ class PassoffModal(discord.ui.Modal, title="Request Passoff"):
         value = self.in_person.value.lower()
         if value not in ("o", "p"):
             await interaction.response.send_message(
-                "Join Queue _**Failed**_. Please enter `o` or `p` to indicate whether you are online or in-person",
+                "_**Could not join queue**_. Please enter `o` or `p` to indicate whether you are online or in-person",
                 ephemeral=True
             )
             return
@@ -98,15 +98,36 @@ class TAView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
     
+    open_msg: str = "The Help Queue is now open!"
+    close_msg: str = "The Help Queue is now closed. If you are still on the queue, the TAs will help until their hours are over."
+    
     @discord.ui.button(label="Open Queue", style=discord.ButtonStyle.green, custom_id="open_queue")
     async def open(self, interaction: discord.Interaction, button):
-        interaction.client.queue.is_open = True
-        await interaction.response.send_message("Queue opened.", ephemeral=True)
+        if not interaction.client.queue.is_open:
+            interaction.client.queue.is_open = True
+            await interaction.response.send_message("Queue opened.", ephemeral=True)
+            for channel in interaction.guild.channels:
+                if channel.name == "help-queue-chat":
+                    if channel.last_message is not None and channel.last_message.content == self.close_msg:
+                        await channel.last_message.delete()
+                    await channel.send(self.open_msg)
+                    return
+        else:
+            await interaction.response.send_message("Queue is already open!", ephemeral=True)
 
     @discord.ui.button(label="Close Queue", style=discord.ButtonStyle.red, custom_id="close_queue")
     async def close(self, interaction: discord.Interaction, button):
-        interaction.client.queue.is_open = False
-        await interaction.response.send_message("Queue closed.", ephemeral=True)
+        if interaction.client.queue.is_open:
+            interaction.client.queue.is_open = False
+            await interaction.response.send_message("Queue closed.", ephemeral=True)
+            for channel in interaction.guild.channels:
+                if channel.name == "help-queue-chat":
+                    if channel.last_message is not None and channel.last_message.content == self.open_msg:
+                        await channel.last_message.delete()
+                    await channel.send(self.close_msg)
+                    return
+        else:
+            await interaction.response.send_message("Queue is already closed!", ephemeral=True)
 
     @discord.ui.button(label="View Queue", style=discord.ButtonStyle.secondary, custom_id="view_queue")
     async def view_btn(self, interaction: discord.Interaction, button):
@@ -119,7 +140,7 @@ class TAView(discord.ui.View):
         entry: Optional[QueueEntry] = await interaction.client.queue.next()
 
         if not entry:
-            return await interaction.response.send_message("Queue empty.", ephemeral=True)
+            return await interaction.response.send_message("Queue is empty.", ephemeral=True)
 
         
         increment_help(entry.user_id, entry.username)
