@@ -167,6 +167,19 @@ class TAView(discord.ui.View):
             f"{entry.username} is next. Go help them!",
             ephemeral=True
         )
+    
+    @discord.ui.button(label="Next Passoff", style=discord.ButtonStyle.blurple, custom_id="next_passoff", emoji="✅")
+    async def next_passoff(self, interaction: discord.Interaction, button: discord.ui.Button):
+        entry: Optional[QueueEntry] = await interaction.client.queue.next(passoff_only=True)
+
+        if not entry:
+            return await interaction.response.send_message("No students awaiting passoff.", ephemeral=True)
+
+        await interaction.response.send_message(
+            f"{entry.username} is next. Go help them!",
+            ephemeral=True
+        )
+
 
     @discord.ui.button(label="Student Info", style=discord.ButtonStyle.red, custom_id="student_info")
     async def student_info(self, interaction: discord.Interaction, button):
