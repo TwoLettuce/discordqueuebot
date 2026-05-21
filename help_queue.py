@@ -48,7 +48,8 @@ class HelpQueue:
 
             out = ["Students in queue:\n"]
             for i, e in enumerate(self.entries, start=1):
-                tag = "PASSOFF" if e.is_passoff else "HELP"
-                out.append(f"{i}. {e.username} - {tag} - {e.question}")
+                p_tag = "PASSOFF" if e.is_passoff else "HELP"
+                o_tag = "ONLINE" if not e.in_person else "IN-PERSON"
+                out.append(f"{i}. {e.username} - {p_tag} - {o_tag} - {e.details}")
 
             return "\n".join(out)

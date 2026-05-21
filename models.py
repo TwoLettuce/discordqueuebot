@@ -5,7 +5,7 @@ from datetime import datetime
 class QueueEntry:
     user_id: int
     username: str
-    question: str
+    details: str
     is_passoff: bool
     timestamp: datetime
     in_person: bool

@@ -33,7 +33,7 @@ class Bot(discord.Client):
         entry = QueueEntry(
             user_id=interaction.user.id,
             username=interaction.user.display_name,
-            question=question,
+            details=question,
             is_passoff=is_passoff,
             timestamp=datetime.now(),
             in_person=in_person
