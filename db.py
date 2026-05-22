@@ -40,9 +40,10 @@ def increment_help(user_id: int, user_name: str):
         INSERT INTO user_stats (user_id, user_name, total_help, daily_help, last_reset)
         VALUES (?, ?, 1, 1, ?)
         ON CONFLICT(user_id) DO UPDATE SET
+            user_name = ?,
             total_help = total_help + 1,
             daily_help = daily_help + 1
-    """, (user_id, user_name, str(date.today())))
+    """, (user_id, user_name, str(date.today()), user_name))
 
     conn.commit()
 

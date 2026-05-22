@@ -37,7 +37,6 @@ class HelpModal(discord.ui.Modal, title="Request Help"):
 class PassoffModal(discord.ui.Modal, title="Request Passoff"):
 
     phase = discord.ui.TextInput(label="Which phase?", max_length=50)
-
     in_person = discord.ui.TextInput(label="Online or In-Person? (o/p)", max_length=1)
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -149,7 +148,7 @@ class TAView(discord.ui.View):
             increment_help(entry.user_id, entry.username)
 
         await interaction.response.send_message(
-            f"{entry.username} is next. Go help them!",
+            f"{entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
             ephemeral=True
         )
 
@@ -164,7 +163,7 @@ class TAView(discord.ui.View):
             increment_help(entry.user_id, entry.username)
 
         await interaction.response.send_message(
-            f"{entry.username} is next. Go help them!",
+            f"{entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
             ephemeral=True
         )
     
@@ -176,10 +175,21 @@ class TAView(discord.ui.View):
             return await interaction.response.send_message("No students awaiting passoff.", ephemeral=True)
 
         await interaction.response.send_message(
-            f"{entry.username} is next. Go help them!",
+            f"{entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
             ephemeral=True
         )
 
+    @discord.ui.button(label="Next Online Passoff", style=discord.ButtonStyle.blurple, custom_id="next_online_passoff", emoji="☑️")
+    async def next_online_passoff(self, interaction: discord.Interaction, button: discord.ui.Button):
+        entry: Optional[QueueEntry] = await interaction.client.queue.next(passoff_only=True, online_only=True)
+
+        if not entry:
+            return await interaction.response.send_message("No students awaiting online passoff.", ephemeral=True)
+
+        await interaction.response.send_message(
+            f"{entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
+            ephemeral=True
+        )
 
     @discord.ui.button(label="Student Info", style=discord.ButtonStyle.red, custom_id="student_info")
     async def student_info(self, interaction: discord.Interaction, button):
