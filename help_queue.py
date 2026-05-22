@@ -1,5 +1,6 @@
 import asyncio
 from typing import Optional
+from db import get_times_helped_today
 from records import QueueEntry
 
 class HelpQueue:
@@ -59,7 +60,11 @@ class HelpQueue:
             for i, e in enumerate(self.entries, start=1):
                 p_tag = "PASSOFF" if e.is_passoff else "HELP"
                 o_tag = "ONLINE" if not e.in_person else "IN-PERSON"
-                out.append(f"{i}. {e.username} - {p_tag} - {o_tag} - {e.details}")
+                times_helped = get_times_helped_today(e.user_id)
+                out.append(
+                    f"{i}. {e.username} - {p_tag} - {o_tag} - {e.details} "
+                    f"(helped {times_helped} time{'s' if times_helped != 1 else ''} today)"
+                )
 
             return "\n".join(out)
         

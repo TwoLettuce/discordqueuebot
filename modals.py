@@ -1,4 +1,5 @@
 import discord
+from db import get_times_helped_today
 
 class HelpModal(discord.ui.Modal, title="Request Help"):
 
@@ -40,11 +41,14 @@ class HelpModal(discord.ui.Modal, title="Request Help"):
             value == "p"
         )
 
+        times_helped = get_times_helped_today(interaction.user.id)
         for channel in interaction.guild.channels:
             if channel.name == "ta-bot-chat":
-                await channel.send(f"{interaction.user.display_name} has joined the help queue - {"In-person" if value=="p" else "Online"} - {self.question.value}",
-                                   # disappear after 30 minutes
-                                    delete_after=60*30)
+                await channel.send(
+                    f"{interaction.user.display_name} has joined the help queue - {"In-person" if value=="p" else "Online"} - {self.question.value} "
+                    f"(helped {times_helped} time{'s' if times_helped != 1 else ''} today)",
+                    delete_after=60*30
+                )
 
 
 class PassoffModal(discord.ui.Modal, title="Request Passoff"):
