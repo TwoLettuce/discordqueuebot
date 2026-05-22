@@ -2,7 +2,7 @@ from typing import Optional
 
 import discord
 from db import increment_help, get_student_info
-from dataclasses import QueueEntry
+from records import QueueEntry
 from modals import HelpModal, PassoffModal, ClearConfirmModal
 
 
@@ -59,12 +59,12 @@ class TAView(discord.ui.View):
         if not interaction.client.queue.is_open:
             interaction.client.queue.is_open = True
             await interaction.response.send_message("Queue opened.", ephemeral=True, delete_after=60*60*12)
-            for channel in interaction.guild.channels:
-                if channel.name == "help-queue-chat":
-                    if channel.last_message is not None and channel.last_message.content == self.close_msg:
-                        await channel.last_message.delete()
-                    await channel.send(self.open_msg, delete_after=60*60*12)
-                    return
+            help_channel = get_channel(interaction, "help-queue-chat")
+
+            if help_channel.last_message is not None and help_channel.last_message.content == self.close_msg:
+                await help_channel.last_message.delete()
+            await help_channel.send(self.open_msg, delete_after=60*60*12)
+            return
         else:
             await interaction.response.send_message("Queue is already open!", ephemeral=True)
 
@@ -73,12 +73,11 @@ class TAView(discord.ui.View):
         if interaction.client.queue.is_open:
             interaction.client.queue.is_open = False
             await interaction.response.send_message("Queue closed.", ephemeral=True)
-            for channel in interaction.guild.channels:
-                if channel.name == "help-queue-chat":
-                    if channel.last_message is not None and channel.last_message.content == self.open_msg:
-                        await channel.last_message.delete()
-                    await channel.send(self.close_msg, delete_after=60*60*12)
-                    return
+            help_channel = get_channel(interaction, "help-queue-chat")
+            if help_channel.last_message is not None and help_channel.last_message.content == self.open_msg:
+                await help_channel.last_message.delete()
+            await help_channel.send(self.close_msg, delete_after=60*60*12)
+            return
         else:
             await interaction.response.send_message("Queue is already closed!", ephemeral=True)
 
@@ -98,6 +97,8 @@ class TAView(discord.ui.View):
         if not entry.is_passoff:
             increment_help(entry.user_id, entry.username)
 
+        await notify_tas(interaction, f"{interaction.user.display_name} is now helping {entry.username}")
+
         await interaction.response.send_message(
             f"You are now helping: {entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
             ephemeral=True
@@ -113,6 +114,8 @@ class TAView(discord.ui.View):
         if not entry.is_passoff:
             increment_help(entry.user_id, entry.username)
 
+        await notify_tas(interaction, f"{interaction.user.display_name} is now helping {entry.username}")
+
         await interaction.response.send_message(
             f"You are now helping: {entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
             ephemeral=True
@@ -125,6 +128,9 @@ class TAView(discord.ui.View):
         if not entry:
             return await interaction.response.send_message("No students awaiting passoff.", ephemeral=True)
 
+        await notify_tas(interaction, f"{interaction.user.display_name} is now helping {entry.username}")
+
+
         await interaction.response.send_message(
             f"You are now helping: {entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
             ephemeral=True
@@ -136,6 +142,9 @@ class TAView(discord.ui.View):
 
         if not entry:
             return await interaction.response.send_message("No students awaiting online passoff.", ephemeral=True)
+
+        await notify_tas(interaction, f"{interaction.user.display_name} is now helping {entry.username}")
+
 
         await interaction.response.send_message(
             f"You are now helping: {entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
@@ -174,3 +183,12 @@ async def queue_is_open(interaction: discord.Interaction)->bool:
 
 async def already_in_queue(interaction: discord.Interaction)->bool:
     return await interaction.client.queue.is_in_queue(interaction.user.id)
+
+def get_channel(interaction: discord.Interaction, channel_name: str):
+    for channel in interaction.guild.channels:
+        if channel.name == channel_name:
+            return channel
+            
+async def notify_tas(interaction: discord.Interaction, msg: str):
+    ta_chat: discord.TextChannel = get_channel(interaction, "ta-bot-chat")
+    await ta_chat.send(msg, delete_after=60*10)
