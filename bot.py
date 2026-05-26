@@ -1,7 +1,7 @@
 import discord
 from discord import app_commands
 from help_queue import HelpQueue
-from ui import QueueView, TAView
+from ui import QueueView, TAView, get_channel
 from records import QueueEntry
 from datetime import datetime
 from db import daily_reset
@@ -44,7 +44,7 @@ class Bot(discord.Client):
         pos = await self.queue.get_position(entry.user_id)
 
         await interaction.response.send_message(
-            f"You are #{pos} in the queue.",
+            f"You are #{pos} in the queue.{" Please join the <#1508943839614996592> voice channel." if not in_person else ""}",
             ephemeral=True
         )
 

@@ -12,7 +12,7 @@ class QueueView(discord.ui.View):
 
     @discord.ui.button(label="Need Help", style=discord.ButtonStyle.primary, custom_id="need_help", emoji="🙏")
     async def help_btn(self, interaction: discord.Interaction, button):
-        if not await queue_is_open(interaction):
+        if not queue_is_open(interaction):
             return await interaction.response.send_message(
                 "Queue is closed.", ephemeral=True, delete_after=20
             )
@@ -27,7 +27,7 @@ class QueueView(discord.ui.View):
 
     @discord.ui.button(label="Passoff", style=discord.ButtonStyle.success, custom_id="passoff", emoji="💪")
     async def passoff_btn(self, interaction: discord.Interaction, button):
-        if not await queue_is_open(interaction):
+        if not queue_is_open(interaction):
             return await interaction.response.send_message(
                 "Queue is closed.", ephemeral=True, delete_after=20
             )
@@ -98,13 +98,15 @@ class TAView(discord.ui.View):
         if not entry.is_passoff:
             increment_help(entry.user_id, entry.username)
 
-        await notify_tas(interaction, f"{interaction.user.display_name} is now helping {entry.username}", delete_after=60*5)
+        await notify_tas(interaction, f"{interaction.user.display_name} is now helping {entry.username}")
 
         await interaction.response.send_message(
             f"You are now helping: {entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
             ephemeral=True,
             delete_after=60*5
         )
+
+        await move_to_breakout(interaction, entry)
 
     @discord.ui.button(label="Next Online", style=discord.ButtonStyle.blurple, custom_id="next_online", emoji="💻")
     async def next_online(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -116,13 +118,16 @@ class TAView(discord.ui.View):
         if not entry.is_passoff:
             increment_help(entry.user_id, entry.username)
 
-        await notify_tas(interaction, f"{interaction.user.display_name} is now helping {entry.username}",delete_after=60*5)
+        await notify_tas(interaction, f"{interaction.user.display_name} is now helping {entry.username}")
 
         await interaction.response.send_message(
             f"You are now helping: {entry.username} - {"In-Person" if entry.in_person else "Online"} - {"Passoff - " if entry.is_passoff else ""}{entry.details}",
             ephemeral=True,
             delete_after=60*5
         )
+
+        await move_to_breakout(interaction, entry)
+
     
     @discord.ui.button(label="Next Passoff", style=discord.ButtonStyle.blurple, custom_id="next_passoff", emoji="✅")
     async def next_passoff(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -140,6 +145,9 @@ class TAView(discord.ui.View):
             delete_after=60*5
         )
 
+        await move_to_breakout(interaction, entry)
+
+
     @discord.ui.button(label="Next Online Passoff", style=discord.ButtonStyle.blurple, custom_id="next_online_passoff", emoji="☑️")
     async def next_online_passoff(self, interaction: discord.Interaction, button: discord.ui.Button):
         entry: Optional[QueueEntry] = await interaction.client.queue.next(passoff_only=True, online_only=True)
@@ -155,6 +163,9 @@ class TAView(discord.ui.View):
             ephemeral=True,
             delete_after=60*5
         )
+
+        await move_to_breakout(interaction, entry)
+
 
     @discord.ui.button(label="Student Info", style=discord.ButtonStyle.secondary, custom_id="student_info", emoji="📝")
     async def student_info(self, interaction: discord.Interaction, button):
@@ -187,7 +198,7 @@ def fixed_width(text: str, width: int) -> str:
     
     return text.ljust(width)
 
-async def queue_is_open(interaction: discord.Interaction)->bool:
+def queue_is_open(interaction: discord.Interaction)->bool:
     return interaction.client.queue.is_open
 
 async def already_in_queue(interaction: discord.Interaction)->bool:
@@ -201,3 +212,30 @@ def get_channel(interaction: discord.Interaction, channel_name: str):
 async def notify_tas(interaction: discord.Interaction, msg: str):
     ta_chat: discord.TextChannel = get_channel(interaction, "ta-bot-chat")
     await ta_chat.send(msg, delete_after=60*10)
+
+def get_next_available_breakout(interaction: discord.Interaction):
+    breakout_names = ("Breakout Room A", "Breakout Room B", "Breakout Room C")
+    for vc in interaction.guild.voice_channels:
+        if vc.name in breakout_names and vc.members == []:
+            return vc
+        
+    return None
+        
+async def move_to_breakout(interaction: discord.Interaction, entry: QueueEntry):
+    student: discord.Member = interaction.guild.get_member(entry.user_id)
+    ta: discord.Member = interaction.guild.get_member(interaction.user.id)
+    if entry.in_person:
+        await ta.move_to(get_channel(interaction, "In Person with Student"))
+    else:
+        breakout_channel: discord.VoiceChannel = get_next_available_breakout(interaction)
+        if breakout_channel is None: 
+            raise RuntimeError("ouch!")
+        try:
+            await ta.move_to(breakout_channel)
+            await student.move_to(breakout_channel)
+        except Exception as e:
+            print(f"A bad thing happened: {e}")
+
+
+
+
