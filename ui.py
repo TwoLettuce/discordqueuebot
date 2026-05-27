@@ -166,6 +166,26 @@ class TAView(discord.ui.View):
     async def remove_from_queue(self, interaction: discord.Interaction, button):
         await interaction.response.send_modal(RemoveConfirmModal())
 
+    @discord.ui.button(label="Finish", style=discord.ButtonStyle.green, custom_id="finish", emoji="🔚")
+    async def finish_button(self, interaction: discord.Interaction, button):
+        online_ta_vc: discord.VoiceChannel = get_channel(interaction, "Online TAs")
+
+        # TODO: WIP vvv
+        if interaction.user.fetch_voice().channel is not discord.VoiceChannel or interaction.channel == online_ta_vc:
+            await interaction.response.send_message("You're not currently helping anyone!")
+            return
+        
+
+        ta_role: discord.Role = get_role(interaction, "TA")
+        for member in interaction.channel.members:
+            if ta_role in member.roles:
+                continue
+            else:
+                await member.move_to(None)
+        await interaction.user.move_to(online_ta_vc)
+        await interaction.response.defer(thinking=False)
+
+
 def fixed_width(text: str, width: int) -> str:
     if len(text) > width:
         return text[:width - 3] + "..."
@@ -178,11 +198,15 @@ def queue_is_open(interaction: discord.Interaction)->bool:
 async def already_in_queue(interaction: discord.Interaction)->bool:
     return await interaction.client.queue.is_in_queue(interaction.user.id)
 
-def get_channel(interaction: discord.Interaction, channel_name: str):
+def get_channel(interaction: discord.Interaction, channel_name: str) -> discord.guild.GuildChannel:
     for channel in interaction.guild.channels:
         if channel.name == channel_name:
             return channel
         
+def get_role(interaction: discord.Interaction, role_name) -> discord.Role:
+    for role in interaction.guild.roles:
+        if role.name == role_name:
+            return role
 
 # currently redundant
 async def notify_tas(interaction: discord.Interaction, msg: str):
