@@ -71,6 +71,10 @@ class HelpQueue:
 
             return "\n".join(out)
         
+    async def get_front(self) -> Optional[QueueEntry]:
+        async with self.lock:
+            return self.entries[0] if self.entries else None
+    
     async def clear(self):
         async with self.lock:
             self.entries.clear()

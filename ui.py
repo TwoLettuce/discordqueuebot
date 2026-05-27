@@ -100,11 +100,22 @@ class TAView(discord.ui.View):
 
         await move_to_breakout(interaction, entry)
 
+        # Notify the next student in line
+        next_entry = await interaction.client.queue.get_front()
+        if next_entry:
+            try:
+                next_student = await interaction.client.fetch_user(next_entry.user_id)
+                await next_student.send("You are next in line for help! A TA will be with you shortly.")
+            except Exception:
+                pass
+
         if not interaction.response.is_done():
             await interaction.response.send_message(f"{interaction.user.display_name} is now helping {entry.username}", delete_after=60)
 
     @discord.ui.button(label="Next Online", style=discord.ButtonStyle.blurple, custom_id="next_online", emoji="💻")
     async def next_online(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Get who was at front before removal
+        front_before = await interaction.client.queue.get_front()
         entry: Optional[QueueEntry] = await interaction.client.queue.next(online_only=True)
 
         if not entry:
@@ -115,12 +126,23 @@ class TAView(discord.ui.View):
 
         await move_to_breakout(interaction, entry)
 
+        # Notify the next student in line only if they changed
+        front_after = await interaction.client.queue.get_front()
+        if front_before and front_after and front_before.user_id != front_after.user_id:
+            try:
+                next_student = await interaction.client.fetch_user(front_after.user_id)
+                await next_student.send("You are next in line! A TA will be with you shortly.")
+            except Exception:
+                pass
+
         if not interaction.response.is_done():
             await interaction.response.send_message(f"{interaction.user.display_name} is now helping {entry.username}", delete_after=60)
 
     
     @discord.ui.button(label="Next Passoff", style=discord.ButtonStyle.blurple, custom_id="next_passoff", emoji="✅")
     async def next_passoff(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Get who was at front before removal
+        front_before = await interaction.client.queue.get_front()
         entry: Optional[QueueEntry] = await interaction.client.queue.next(passoff_only=True)
 
         if not entry:
@@ -128,19 +150,38 @@ class TAView(discord.ui.View):
 
         await move_to_breakout(interaction, entry)
 
+        # Notify the next student in line only if they changed
+        front_after = await interaction.client.queue.get_front()
+        if front_before and front_after and front_before.user_id != front_after.user_id:
+            try:
+                next_student = await interaction.client.fetch_user(front_after.user_id)
+                await next_student.send("You are next in line! A TA will be with you shortly.")
+            except Exception:
+                pass
+
         if not interaction.response.is_done():
             await interaction.response.send_message(f"{interaction.user.display_name} is now helping {entry.username}", delete_after=60)
 
 
     @discord.ui.button(label="Next Online Passoff", style=discord.ButtonStyle.blurple, custom_id="next_online_passoff", emoji="☑️")
     async def next_online_passoff(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Get who was at front before removal
+        front_before = await interaction.client.queue.get_front()
         entry: Optional[QueueEntry] = await interaction.client.queue.next(passoff_only=True, online_only=True)
 
         if not entry:
             return await interaction.response.send_message("No students awaiting online passoff.", ephemeral=True, delete_after=10)
 
-
         await move_to_breakout(interaction, entry)
+
+        # Notify the next student in line only if they changed
+        front_after = await interaction.client.queue.get_front()
+        if front_before and front_after and front_before.user_id != front_after.user_id:
+            try:
+                next_student = await interaction.client.fetch_user(front_after.user_id)
+                await next_student.send("You are next in line! A TA will be with you shortly.")
+            except Exception:
+                pass
 
         if not interaction.response.is_done():
             await interaction.response.send_message(f"{interaction.user.display_name} is now helping {entry.username}", delete_after=60)
