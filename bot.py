@@ -1,7 +1,8 @@
 import discord
 from discord import app_commands
 from help_queue import HelpQueue
-from ui import QueueView, TAView, get_channel
+from ui.views.queue_view import QueueView
+from ui.views.ta_view import TAView
 from records import QueueEntry
 from datetime import datetime
 from db import daily_reset
@@ -42,13 +43,6 @@ class Bot(discord.Client):
 
         await self.queue.add(entry)
 
-        pos = await self.queue.get_position(entry.user_id)
-
-        await interaction.response.send_message(
-            f"You are #{pos} in the queue.{f" Please join the {get_channel(interaction, "Waiting Room").mention} voice channel." if not in_person else ""}",
-            ephemeral=True,
-            delete_after=60*5
-        )
 
 bot = Bot()
 
