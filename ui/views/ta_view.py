@@ -4,7 +4,7 @@ import discord
 from db import get_last_incident_info, increment_help, get_student_info
 from records import QueueEntry
 from ui.modals import ClearConfirmModal, RemoveConfirmModal
-from ui.helpers.constants import DEFAULT_TIMEOUT, SHORT_TIMEOUT, QUEUE_OPENED, HELP_CHANNEL_NAME, QUEUE_ALREADY_OPEN, QUEUE_CLOSED, QUEUE_ALREADY_CLOSED, CLOSE_TTL, OPEN_TTL, STUDENT_INFO_WIDTH, LONG_TIMEOUT, NEXT_IN_LINE_MSG, NOW_HELPING_TEMPLATE, ONLINE_TAS_VC_NAME
+from ui.helpers.constants import DEFAULT_TIMEOUT, SHORT_TIMEOUT, QUEUE_OPENED, HELP_CHANNEL_NAME, QUEUE_ALREADY_OPEN, QUEUE_CLOSED, QUEUE_ALREADY_CLOSED, CLOSE_TTL, OPEN_TTL, STUDENT_INFO_WIDTH, LONG_TIMEOUT, NEXT_IN_LINE_MSG, NOW_HELPING_TEMPLATE, ONLINE_TAS_VC_NAME, QUEUE_OPEN_MESSAGE, QUEUE_CLOSE_MESSAGE
 from ui.helpers.utils import fixed_width
 from ui.helpers.discord_helpers import get_channel, get_role, move_to_breakout, safe_dm_user, notify_next_if_changed
 
@@ -15,8 +15,6 @@ class TAView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
     
-    open_msg: str = "The Help Queue is now open!"
-    close_msg: str = "The Help Queue is now closed. If you are still on the queue, the TAs will help until their hours are over."
     
     @discord.ui.button(label="Open Queue", style=discord.ButtonStyle.green, custom_id="open_queue", emoji="🔓")
     async def open(self, interaction: discord.Interaction, button: discord.Button):
@@ -25,10 +23,10 @@ class TAView(discord.ui.View):
             await interaction.response.send_message(QUEUE_OPENED, ephemeral=True, delete_after=DEFAULT_TIMEOUT)
             help_channel = get_channel(interaction, HELP_CHANNEL_NAME)
 
-            if help_channel and help_channel.last_message is not None and help_channel.last_message.content == self.close_msg:
+            if help_channel and help_channel.last_message is not None and help_channel.last_message.content == QUEUE_CLOSE_MESSAGE:
                 await help_channel.last_message.delete()
             if help_channel:
-                await help_channel.send(self.open_msg, delete_after=OPEN_TTL)
+                await help_channel.send(self.QUEUE_OPEN_MESSAGE, delete_after=OPEN_TTL)
             return
         else:
             await interaction.response.send_message(QUEUE_ALREADY_OPEN, ephemeral=True, delete_after=SHORT_TIMEOUT)
@@ -39,10 +37,10 @@ class TAView(discord.ui.View):
             interaction.client.queue.is_open = False
             await interaction.response.send_message(QUEUE_CLOSED, ephemeral=True, delete_after=DEFAULT_TIMEOUT)
             help_channel = get_channel(interaction, HELP_CHANNEL_NAME)
-            if help_channel and help_channel.last_message is not None and help_channel.last_message.content == self.open_msg:
+            if help_channel and help_channel.last_message is not None and help_channel.last_message.content == QUEUE_OPEN_MESSAGE:
                 await help_channel.last_message.delete()
             if help_channel:
-                await help_channel.send(self.close_msg, delete_after=CLOSE_TTL)
+                await help_channel.send(self.QUEUE_CLOSE_MESSAGE, delete_after=CLOSE_TTL)
             return
         else:
             await interaction.response.send_message(QUEUE_ALREADY_CLOSED, ephemeral=True, delete_after=SHORT_TIMEOUT)
@@ -200,4 +198,8 @@ class TAView(discord.ui.View):
         await interaction.user.move_to(online_ta_vc)
         await interaction.response.defer(thinking=False)
 
+    @discord.ui.button(label="Edit Hours", style=discord.ButtonStyle.secondary, custom_id="edit_hours", emoji="🕐")
+    async def edit_queue_hours(self, interaction: discord.Interaction, button: discord.ui.Button):
+        from ui.modals import EditQueueHoursModal
+        await interaction.response.send_modal(EditQueueHoursModal())
 

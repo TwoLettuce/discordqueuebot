@@ -1,8 +1,11 @@
 import sqlite3
+import discord
+from discord.utils import get as discord_get
 from datetime import date, datetime, time
 from typing import List, Optional
 from zoneinfo import ZoneInfo
 from discord.ext import tasks
+from ui.helpers.constants import CLOSE_TTL, HELP_CHANNEL_NAME, OPEN_TTL, QUEUE_CLOSE_MESSAGE, QUEUE_OPEN_MESSAGE
 
 conn: sqlite3.Connection = sqlite3.connect("queue.db", detect_types=sqlite3.PARSE_DECLTYPES)
 conn.row_factory = sqlite3.Row
@@ -32,6 +35,24 @@ def _initialize_database() -> None:
             )
             """
         )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS queue_settings (
+                id INTEGER PRIMARY KEY,
+                open_hour INTEGER DEFAULT 8,
+                open_minute INTEGER DEFAULT 0,
+                close_hour INTEGER DEFAULT 20,
+                close_minute INTEGER DEFAULT 0
+            )
+            """
+        )
+
+        # Ensure queue_settings has a default row
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM queue_settings")
+        if cursor.fetchone()[0] == 0:
+            conn.execute("INSERT INTO queue_settings (id, open_hour, open_minute, close_hour, close_minute) VALUES (1, 8, 0, 20, 0)")
 
 
 _initialize_database()
@@ -142,3 +163,78 @@ def get_times_helped_today(user_id: int) -> int:
     cursor.execute("SELECT daily_help FROM user_stats WHERE user_id=?", (user_id,))
     row = cursor.fetchone()
     return int(row[0]) if row else 0
+
+
+def get_queue_times() -> tuple[int, int, int, int]:
+    """Get the configured queue open and close times.
+    
+    Returns:
+        Tuple of (open_hour, open_minute, close_hour, close_minute)
+    """
+    cursor = conn.cursor()
+    cursor.execute("SELECT open_hour, open_minute, close_hour, close_minute FROM queue_settings WHERE id = 1")
+    row = cursor.fetchone()
+    if row:
+        return int(row[0]), int(row[1]), int(row[2]), int(row[3])
+    return 8, 0, 20, 0  # Default to 8:00am-8:00pm
+
+
+def set_queue_times(open_hour: int, open_minute: int, close_hour: int, close_minute: int) -> None:
+    """Set the queue open and close times.
+    
+    Args:
+        open_hour: Hour to open (0-23)
+        open_minute: Minute to open (0-59)
+        close_hour: Hour to close (0-23)
+        close_minute: Minute to close (0-59)
+    """
+    if not (0 <= open_hour <= 23 and 0 <= open_minute <= 59 and 0 <= close_hour <= 23 and 0 <= close_minute <= 59):
+        raise ValueError("Hours must be 0-23 and minutes must be 0-59")
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE queue_settings SET open_hour = ?, open_minute = ?, close_hour = ?, close_minute = ? WHERE id = 1",
+        (open_hour, open_minute, close_hour, close_minute)
+    )
+    conn.commit()
+
+
+async def _announce_queue_state(bot_client: discord.Client, opening: bool) -> None:
+    help_channel = None
+    for guild in bot_client.guilds:
+        help_channel = discord_get(guild.text_channels, name=HELP_CHANNEL_NAME)
+        if help_channel is not None:
+            break
+
+    if help_channel is None:
+        return
+
+    if opening:
+        if help_channel.last_message is not None and help_channel.last_message.content == QUEUE_CLOSE_MESSAGE:
+            await help_channel.last_message.delete()
+        await help_channel.send(QUEUE_OPEN_MESSAGE, delete_after=OPEN_TTL)
+    else:
+        if help_channel.last_message is not None and help_channel.last_message.content == QUEUE_OPEN_MESSAGE:
+            await help_channel.last_message.delete()
+        await help_channel.send(QUEUE_CLOSE_MESSAGE, delete_after=CLOSE_TTL)
+
+
+# Queue auto-open/close scheduled tasks
+@tasks.loop(minutes=1)
+async def auto_queue_scheduler(bot_client: discord.Client) -> None:
+    """Check if queue should be auto-opened or auto-closed every minute."""
+    open_hour, open_minute, close_hour, close_minute = get_queue_times()
+    denver_tz = ZoneInfo("America/Denver")
+    current_time = datetime.now(denver_tz)
+    
+    # Check if we should open (at the configured open time)
+    if current_time.hour == open_hour and current_time.minute == open_minute and not bot_client.queue.is_open:
+        bot_client.queue.is_open = True
+        print(f"Queue auto-opened at {current_time.strftime('%H:%M')}")
+        await _announce_queue_state(bot_client, opening=True)
+
+    
+    # Check if we should close (at the configured close time)
+    elif current_time.hour == close_hour and current_time.minute == close_minute and bot_client.queue.is_open:
+        bot_client.queue.is_open = False
+        print(f"Queue auto-closed at {current_time.strftime('%H:%M')}")
+        await _announce_queue_state(bot_client, opening=False)

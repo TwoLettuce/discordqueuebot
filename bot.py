@@ -5,7 +5,7 @@ from ui.views.queue_view import QueueView
 from ui.views.ta_view import TAView
 from records import QueueEntry
 from datetime import datetime
-from db import daily_reset
+from db import daily_reset, auto_queue_scheduler
 
 import os
 from dotenv import load_dotenv
@@ -28,7 +28,10 @@ class Bot(discord.Client):
         self.add_view(QueueView())
         self.add_view(TAView())
         daily_reset.start()
+        auto_queue_scheduler.start(self)
+        
         await self.tree.sync()
+
 
     async def queue_handler(self, interaction: discord.Interaction, question, is_passoff, in_person, student_name: str):
         entry = QueueEntry(

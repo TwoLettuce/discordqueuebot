@@ -1,7 +1,8 @@
 import discord
 from datetime import datetime
 from db import get_times_helped_today, record_bot_issue
-from ui.helpers.discord_helpers import get_channel
+from ui.helpers.discord_helpers import get_channel, get_role
+from ui.helpers.constants import SHORT_TIMEOUT, DEFAULT_TIMEOUT
 
 class HelpModal(discord.ui.Modal, title="Request Help"):
 
@@ -172,3 +173,61 @@ class RemoveConfirmModal(discord.ui.Modal, title="Removal Confirmation"):
                 return
             
         await interaction.response.send_message(f"No student with the username \"{self.input.value}\" in the queue.", ephemeral=True, delete_after=10)
+
+
+class EditQueueHoursModal(discord.ui.Modal, title="Edit Queue Hours"):
+    open_hour = discord.ui.TextInput(
+        label="Queue Open Hour (0-23)",
+        placeholder="8",
+        min_length=1,
+        max_length=2
+    )
+    open_minute = discord.ui.TextInput(
+        label="Queue Open Minute (0-59)",
+        placeholder="00",
+        min_length=1,
+        max_length=2
+    )
+    close_hour = discord.ui.TextInput(
+        label="Queue Close Hour (0-23)",
+        placeholder="20",
+        min_length=1,
+        max_length=2
+    )
+    close_minute = discord.ui.TextInput(
+        label="Queue Close Minute (0-59)",
+        placeholder="00",
+        min_length=1,
+        max_length=2
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        from db import set_queue_times
+        
+        try:
+            open_h = int(self.open_hour.value)
+            open_m = int(self.open_minute.value)
+            close_h = int(self.close_hour.value)
+            close_m = int(self.close_minute.value)
+            
+            if not (0 <= open_h <= 23 and 0 <= open_m <= 59 and 0 <= close_h <= 23 and 0 <= close_m <= 59):
+                await interaction.response.send_message(
+                    "Hours must be 0-23 and minutes must be 0-59.",
+                    ephemeral=True,
+                    delete_after=SHORT_TIMEOUT
+                )
+                return
+            
+            set_queue_times(open_h, open_m, close_h, close_m)
+            ta_role = get_role(interaction, "TA")
+            await interaction.response.send_message(
+                f"{ta_role.mention} ANNOUNCEMENT: Queue hours updated: Opens at {open_h:02d}:{open_m:02d}, closes at {close_h:02d}:{close_m:02d}",
+                delete_after=60*60*24*7
+            )
+        except ValueError:
+            await interaction.response.send_message(
+                "Please enter valid integers for hours and minutes.",
+                ephemeral=True,
+                delete_after=SHORT_TIMEOUT
+            )
+
