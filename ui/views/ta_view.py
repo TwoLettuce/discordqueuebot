@@ -26,7 +26,7 @@ class TAView(discord.ui.View):
             if help_channel and help_channel.last_message is not None and help_channel.last_message.content == QUEUE_CLOSE_MESSAGE:
                 await help_channel.last_message.delete()
             if help_channel:
-                await help_channel.send(self.QUEUE_OPEN_MESSAGE, delete_after=OPEN_TTL)
+                await help_channel.send(QUEUE_OPEN_MESSAGE, delete_after=OPEN_TTL)
             return
         else:
             await interaction.response.send_message(QUEUE_ALREADY_OPEN, ephemeral=True, delete_after=SHORT_TIMEOUT)
@@ -44,11 +44,6 @@ class TAView(discord.ui.View):
             return
         else:
             await interaction.response.send_message(QUEUE_ALREADY_CLOSED, ephemeral=True, delete_after=SHORT_TIMEOUT)
-
-    @discord.ui.button(label="View Queue", style=discord.ButtonStyle.secondary, custom_id="view_queue", emoji="👀")
-    async def view_btn(self, interaction: discord.Interaction, button):
-        text = await interaction.client.queue.view()
-        await interaction.response.send_message(text, ephemeral=True, delete_after=DEFAULT_TIMEOUT)
 
     @discord.ui.button(label="Days Since Last Incident", style=discord.ButtonStyle.secondary, custom_id="days_since_incident", emoji="⚠️")
     async def days_since_incident_btn(self, interaction: discord.Interaction, button):
@@ -91,6 +86,7 @@ class TAView(discord.ui.View):
         if next_entry:
             await safe_dm_user(interaction.client, next_entry.user_id, NEXT_IN_LINE_MSG)
 
+        await interaction.client.update_queue_status_message()
 
         # Getting an unknown response here :/
         if not interaction.response.is_done():
@@ -112,6 +108,7 @@ class TAView(discord.ui.View):
 
         # Notify the next student in line only if they changed
         await notify_next_if_changed(interaction.client, front_before)
+        await interaction.client.update_queue_status_message()
 
         if not interaction.response.is_done():
             await interaction.response.send_message(
@@ -135,6 +132,7 @@ class TAView(discord.ui.View):
 
         # Notify the next student in line only if they changed
         await notify_next_if_changed(interaction.client, front_before)
+        await interaction.client.update_queue_status_message()
 
         if not interaction.response.is_done():
             await interaction.response.send_message(
@@ -156,6 +154,7 @@ class TAView(discord.ui.View):
 
         # Notify the next student in line only if they changed
         await notify_next_if_changed(interaction.client, front_before)
+        await interaction.client.update_queue_status_message()
 
         if not interaction.response.is_done():
             await interaction.response.send_message(

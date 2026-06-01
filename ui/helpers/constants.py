@@ -1,5 +1,6 @@
 # Constants to centralize configurable names/messages
 HELP_CHANNEL_NAME = "help-queue-chat"
+TA_CHANNEL_NAME = "ta-bot-chat"
 QUEUE_OPEN_MESSAGE = "The Help Queue is now open!"
 QUEUE_CLOSE_MESSAGE = "The Help Queue is now closed. If you are still on the queue, the TAs will help until their hours are over."
 ONLINE_TAS_VC_NAME = "Online TAs"
