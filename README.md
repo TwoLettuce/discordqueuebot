@@ -22,29 +22,13 @@ Go to https://www.python.org/downloads/. On Windows, enable "Add Python to PATH"
 Open the project folder in VS Code.
 
 
-> [! IMPORTANT]
-> Steps 3 and 4 are optional, but highly recommended
-#### 3. Create a virtual environment in the project root:
+> [!IMPORTANT]
+> Step 3 is optional, but highly recommended
+#### 3. Create and run a virtual environment in the project root:
 
-Open the terminal using `ctrl+\``
+Refer to the internet for help on this one. It's different depending on your system.
 
-Run the following command:
-
-```powershell
-python -m venv .venv
-```
-
-#### 4. Activate the environment:
-
-Run the following command in the VSCode terminal:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-You should see a (.venv) to the left of the terminal prompt.
-
-#### 5. Upgrade pip and install dependencies:
+#### 4. Upgrade pip and install dependencies:
 
 Run the following commands in the VSCode terminal:
 
@@ -53,7 +37,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-#### 6. Confirm `ffmpeg` is installed:
+#### 5. Confirm `ffmpeg` is installed:
 
 Run the following command in the VSCode terminal:
 
@@ -62,6 +46,35 @@ ffmpeg -version
 ```
 
 ## Discord server setup
+
+#### Required channels and role names
+
+The bot expects the following channel and role names by default. Names are case-sensitive and must match exactly.. If you use different names, update `ui/helpers/constants.py`.
+
+- Text channels:
+  - `help-queue-chat`
+  - `ta-bot-chat`
+- Voice channels:
+  - `Online TAs`
+  - `In Person with Student`
+  - `Waiting Room`
+  - `Breakout Room A`
+  - `Breakout Room B`
+  - `Breakout Room C`
+- Roles:
+  - `TA`
+  - `Bot` (so you can give it channel-specific permissions manually)
+
+Suggested permissions: 
+  - Restrict channel management server-wide.
+  - Allow Bot to Move Members server-wide.
+  - help-queue-chat: @everyone restrict messages/threads, etc. Keep reactions enabled. @TA and @Bot all permissions.
+  - ta-bot-chat: @everyone cannot see the channel. @TA and @Bot all permissions.
+  - Online TAs: @everyone cannot join the channel. @TA and @Bot all permissions.
+  - Waiting Room/Breakout Rooms: @everyone all permissions
+  - In Person with Student: @everyone cannot join the channel, but they can see it. @TA and @Bot all permissions.
+
+## Bot Setup
 
 #### 1. Go to the Discord Developer Portal: https://discord.com/developers/applications
 
@@ -82,7 +95,7 @@ TOKEN=your-discord-bot-token-here
    - `applications.commands`
 
 #### 6. Under Bot Permissions, grant the following permissions:
-   - View Channels / Read Messages
+   - View Channels
    - Send Messages
    - Read Message History
    - Manage Messages
@@ -93,32 +106,9 @@ TOKEN=your-discord-bot-token-here
 
 #### 7. Generate the invite URL, open it in your browser, and invite the bot to your server.
 
-## Required channels and role names
 
-The bot expects the following channel and role names by default. If you use different names, update `ui/helpers/constants.py`.
 
-- Text channels:
-  - `help-queue-chat`
-  - `ta-bot-chat`
-- Voice channels:
-  - `Online TAs`
-  - `In Person with Student`
-  - `Waiting Room`
-  - `Breakout Room A`
-  - `Breakout Room B`
-  - `Breakout Room C`
-- Roles:
-  - `TA`
-  - `Bot` (so you can give it channel-specific permissions manually)
-
-Suggested permissions: 
-  - help-queue-chat: @everyone restrict permissions, @TA and @Bot all permissions.
-  - ta-bot-chat: @everyone cannot see the channel. @TA and @Bot all permissions.
-  - Online TAs: @everyone cannot join the channel, but they can see it. @TA and @Bot all permissions.
-  - Waiting Room/Breakout Rooms: @everyone all permissions
-  - In Person with Student: @everyone cannot join the channel, but they can see it. @TA and @Bot all permissions.
-
-## Bot setup and start
+## Running the bot
 
 #### 1. Ensure your `.env` file contains the bot token.
 #### 2. If you want voice alerts, place one or more `.mp3` files in the `resources/` folder.
@@ -128,15 +118,13 @@ Suggested permissions:
 python bot.py
 ```
 
-#### 4. The bot will create `queue.db` automatically in the project folder.
+#### 4. Use the application commands
 
-## What it does
+   - Use the command for the students' help queue buttons in help-queue-chat
+   - Use the command for the TAs' help queue buttons in ta-bot-chat
 
-- Posts a live queue status message in the TA text channel
-- Updates the message when students join or leave the queue
-- Announces queue open/close in `help-queue-chat`
-- Joins the `Online TAs` voice channel and plays a random MP3 once per minute while the queue is non-empty
-- Leaves the voice channel when the queue becomes empty
+> [!Note]
+> If the commands don't show up, try restarting your discord client. Sometimes it takes a minute or two to sync the commands.
 
 ## Notes
 
