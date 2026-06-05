@@ -233,14 +233,12 @@ bot = Bot()
 @bot.tree.command(name="queue")
 async def queue_panel(interaction: discord.Interaction):
     await interaction.response.send_message(
-        "Queue Panel",
         view=QueueView()
     )
 
 @bot.tree.command(name="ta")
 async def ta_panel(interaction: discord.Interaction):
     await interaction.response.send_message(
-        "TA Panel",
         view=TAView()
     )
 
