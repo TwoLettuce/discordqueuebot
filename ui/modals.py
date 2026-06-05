@@ -3,7 +3,7 @@ from datetime import datetime
 from db import get_times_helped_today, record_bot_issue
 from ui.helpers.discord_helpers import get_channel, get_role, update_queue_messages
 from ui.helpers.constants import SHORT_TIMEOUT, TA_TEXT_CHANNEL_NAME
-
+from ui.helpers.discord_helpers import get_channel, get_role, notify_next_if_changed, update_queue_messages
 class HelpModal(discord.ui.Modal, title="Request Help"):
 
     name = discord.ui.TextInput(
@@ -176,10 +176,12 @@ class RemoveConfirmModal(discord.ui.Modal, title="Removal Confirmation"):
         ))
 
     async def on_submit(self, interaction: discord.Interaction):
+        front_before = await interaction.client.queue.get_front()
         user: discord.User = await interaction.client.fetch_user(self.student_user_id)
         await interaction.client.queue.remove(self.student_user_id)
         await update_queue_messages(interaction.client)
 
+        await notify_next_if_changed(interaction.client, front_before)
         reason_suffix = f" Reason: {self.reason.value}" if self.reason.value else ""
         await user.send(
             f"You have been removed from the CS240 help queue.{reason_suffix}"

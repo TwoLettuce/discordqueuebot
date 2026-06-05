@@ -12,14 +12,21 @@ class RemoveStudentView(discord.ui.View):
     def __init__(self, entries):
         super().__init__(timeout=30)
 
-        options = []
+        options = [
+            discord.SelectOption(
+                label="— Cancel —",
+                value="__cancel__",
+                description="Reset selection without removing anyone",
+                emoji="↩️",
+            )
+        ]
         for i, entry in enumerate(entries, start=1):
             label = entry.student_name if entry.student_name else entry.username
             if len(label) > 100:
                 label = label[:97] + "..."
             desc = entry.details if entry.details else ""
             if len(desc) > 100:
-                desc = desc[:97] + "..."
+                desc = desc[:93] + "..."  # 96 chars + "#N " prefix ≤ 100
 
             emoji = "✅" if entry.is_passoff else "❓"
 
@@ -42,6 +49,10 @@ class RemoveStudentView(discord.ui.View):
         self.add_item(select)
 
     async def select_callback(self, interaction: discord.Interaction):
+        selected = self.children[0].values[0]
+        if selected == "__cancel__":
+            await interaction.response.defer()
+            return
         user_id = int(self.children[0].values[0])
 
         entry = next(
@@ -217,7 +228,8 @@ class TAView(discord.ui.View):
             return
         view = RemoveStudentView(entries)
         await interaction.response.send_message(
-            "Select a student to remove:", view=view, ephemeral=True, delete_after=60
+            "Select a student to remove:\n✅ = Passoff  |  ❓ = Question",
+            view=view, ephemeral=True, delete_after=60
         )
     @discord.ui.button(label="Finish", style=discord.ButtonStyle.green, custom_id="finish", emoji="🔚")
     async def finish_button(self, interaction: discord.Interaction, button):
