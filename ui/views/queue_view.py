@@ -1,5 +1,5 @@
 import discord
-from ui.helpers.queue_helpers import require_queue_open_and_not_in_queue
+from ui.helpers.queue_helpers import can_join_queue
 from db import get_times_helped_today
 from ui.modals import HelpModal, PassoffModal, BotIssueModal
 from ui.helpers.constants import DEFAULT_TIMEOUT, SHORT_TIMEOUT
@@ -12,7 +12,7 @@ class QueueView(discord.ui.View):
 
     @discord.ui.button(label="Need Help", style=discord.ButtonStyle.primary, custom_id="need_help", emoji="🙏")
     async def help_btn(self, interaction: discord.Interaction, button):
-        ok = await require_queue_open_and_not_in_queue(interaction)
+        ok = await can_join_queue(interaction)
         if not ok:
             return
 
@@ -21,7 +21,7 @@ class QueueView(discord.ui.View):
 
     @discord.ui.button(label="Passoff", style=discord.ButtonStyle.success, custom_id="passoff", emoji="💪")
     async def passoff_btn(self, interaction: discord.Interaction, button):
-        ok = await require_queue_open_and_not_in_queue(interaction)
+        ok = await can_join_queue(interaction)
         if not ok:
             return
 
