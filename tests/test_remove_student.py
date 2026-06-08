@@ -1,44 +1,3 @@
-"""
-============================================================
-如何避免漏掉边界情况（本次踩坑复盘）
-============================================================
-
-这次最初写的测试没覆盖到"取消 Modal 后无法重选""移除队首应通知新队首"
-这类边界问题，根本原因是按"happy path"写测试，而非按"状态机"写测试。
-
-一套可复用的自查清单：
-
-1. 【状态迁移图】
-   对每个交互组件，画出它经历的所有状态。
-   本例中 Select 的状态：初始未选中 → 选中学生 → 弹出 Modal →
-     → 确认 → 学生被移除 ✓
-     → 取消 → 回到未选中状态（本次遗漏！Discord 默认做不到）
-   每个箭头 = 一个 test case。
-
-2. 【0 / 1 / N 法则】
-   每个涉及集合的操作，至少测 3 种数据量：
-   - 0：空队列点 Remove Student → 应提示 "Queue is empty."
-   - 1：队列只有一人时取消重选（本次遗漏！因为 1 人时 Cancel 是唯一出路）
-   - N：多人时选中间的人、选队首、选队尾
-
-3. 【"反悔"路径】
-   任何需要用户确认的操作，必须测"点了确认再取消"的路径：
-   - 点了删除 → Modal 弹出 → 按 Esc 关闭 → 还能重新选吗？
-   - 本次的 Cancel 选项就是为了给这个路径兜底
-
-4. 【副作用传播】
-   操作 A 影响了谁？列出所有"利益相关方"：
-   - 被移除的学生本人 → 应收到 DM
-   - 新队首 → 应收到 "you are next"（本次遗漏！）
-   - 其他 TA → 他们打开的下拉菜单里该项应失效（已测）
-
-5. 【并发 / 竞赛】
-   两个 TA 同时操作同一学生：
-   - TA1 选中 Alice，弹出 Modal 但不提交
-   - TA2 也选中 Alice，确认移除
-   - TA1 再点确认 → 应提示 "已不在队列中"（已测）
-"""
-
 import unittest
 from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
 from datetime import datetime
@@ -48,9 +7,9 @@ import discord
 from records import QueueEntry
 from help_queue import HelpQueue
 
-
+"""This file conducts tests on the funcitonality of the Remove button using Mocks to simulate interactions with Discord's APi."""
 # ==========================================================
-# Fixtures
+# Helper functions
 # ==========================================================
 
 def make_entry(user_id: int, username: str = "", student_name: str = "",
@@ -68,7 +27,7 @@ def make_entry(user_id: int, username: str = "", student_name: str = "",
 
 def make_mock_interaction(queue: HelpQueue, user_id: int = 999,
                           display_name: str = "TA_Test"):
-    """构造一个带 client.queue 的 mock Interaction"""
+    """Construct a mock Interaction with a client.queue."""
     mock = MagicMock(spec=discord.Interaction)
     mock.client = MagicMock()
     mock.client.queue = queue
@@ -86,7 +45,7 @@ def make_mock_interaction(queue: HelpQueue, user_id: int = 999,
 
 
 # ==========================================================
-# HelpQueue
+# HelpQueue Modification tests (Most important)
 # ==========================================================
 
 class TestHelpQueue(unittest.IsolatedAsyncioTestCase):
@@ -124,7 +83,7 @@ class TestHelpQueue(unittest.IsolatedAsyncioTestCase):
 
 
 # ==========================================================
-# RemoveStudentView — 构造
+# RemoveStudentView construction
 # ==========================================================
 
 class TestRemoveStudentViewConstruction(unittest.IsolatedAsyncioTestCase):
@@ -165,7 +124,7 @@ class TestRemoveStudentViewConstruction(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(opt.label.endswith("..."))
 
     def test_description_truncated(self):
-        """description ≤ 100 字符（含 "#N " 前缀）"""
+        """description is at most 100 characters long (including the "#N " prefix)."""
         from ui.views.ta_view import RemoveStudentView
         view = RemoveStudentView([make_entry(1, username="x", details="D" * 200)])
         opt = view.children[0].options[1]
@@ -178,13 +137,13 @@ class TestRemoveStudentViewConstruction(unittest.IsolatedAsyncioTestCase):
 
 
 # ==========================================================
-# RemoveStudentView — select_callback
+# RemoveStudentView Callback
 # ==========================================================
 
 class TestRemoveStudentViewCallback(unittest.IsolatedAsyncioTestCase):
 
     async def test_cancel_option_defers_and_returns(self):
-        """选 Cancel → defer，不弹 Modal"""
+        """Select Cancel → defer and do not show the Modal."""
         from ui.views.ta_view import RemoveStudentView
         q = HelpQueue()
         await q.add(make_entry(1, username="alice"))
@@ -201,7 +160,7 @@ class TestRemoveStudentViewCallback(unittest.IsolatedAsyncioTestCase):
         interaction.response.send_modal.assert_not_awaited()
 
     async def test_select_student_sends_modal(self):
-        """选学生 → 弹出 RemoveConfirmModal，携带正确参数"""
+        """Select a student → show RemoveConfirmModal with correct parameters."""
         from ui.views.ta_view import RemoveStudentView
         q = HelpQueue()
         await q.add(make_entry(1, username="alice", student_name="Alice"))
@@ -220,10 +179,10 @@ class TestRemoveStudentViewCallback(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(modal.student_name, "Alice")
 
     async def test_student_already_removed_by_another_ta(self):
-        """并发：选中的学生已被其他 TA 移除"""
+        """Concurrency: the selected student has already been removed by another TA."""
         from ui.views.ta_view import RemoveStudentView
         q = HelpQueue()
-        # entry 不在队列中（模拟已移除）
+        # entry is not in the queue (simulate already removed)
         entry = make_entry(2, username="bob")
 
         interaction = make_mock_interaction(q)
@@ -240,7 +199,7 @@ class TestRemoveStudentViewCallback(unittest.IsolatedAsyncioTestCase):
 
 
 # ==========================================================
-# RemoveConfirmModal
+# RemoveConfirmModal functionality
 # ==========================================================
 
 class TestRemoveConfirmModal(unittest.IsolatedAsyncioTestCase):
@@ -273,7 +232,7 @@ class TestRemoveConfirmModal(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(q.entries[0].user_id, 2)
 
     async def test_on_submit_notifies_new_front(self):
-        """移除队首 → notify_next_if_changed 被调用，传入旧队首"""
+        """Removing the front of the queue calls notify_next_if_changed to notify the new front."""
         from ui.modals import RemoveConfirmModal
         q = HelpQueue()
         await q.add(make_entry(1, username="alice"))
@@ -292,11 +251,11 @@ class TestRemoveConfirmModal(unittest.IsolatedAsyncioTestCase):
             await modal.on_submit(interaction)
 
         mock_notify.assert_awaited_once()
-        # 第二个参数 front_before 是旧队首（alice, user_id=1）
+        # The second argument front_before is the previous front of the queue (alice, user_id=1).
         self.assertEqual(mock_notify.call_args[0][1].user_id, 1)
 
     async def test_on_submit_no_notify_when_removed_not_front(self):
-        """移除非队首 → notify_next_if_changed 仍被调用，但传入的旧队首没变"""
+        """Removing a non-front student still calls notify_next_if_changed, but the old front remains unchanged."""
         from ui.modals import RemoveConfirmModal
         q = HelpQueue()
         await q.add(make_entry(1, username="alice"))
@@ -315,8 +274,8 @@ class TestRemoveConfirmModal(unittest.IsolatedAsyncioTestCase):
             await modal.on_submit(interaction)
 
         mock_notify.assert_awaited_once()
-        # 旧队首是 alice (user_id=1)，与移除的 bob (user_id=2) 不同，
-        # notify_next_if_changed 内部判断前后队首都是 alice，因此不发 DM
+        # The old front is alice (user_id=1), which differs from the removed bob (user_id=2).
+        # notify_next_if_changed will compare the front before and after and should not send a DM if it is still alice.
         self.assertEqual(mock_notify.call_args[0][1].user_id, 1)
 
     async def test_on_submit_dm_to_student(self):
@@ -386,7 +345,7 @@ class TestRemoveConfirmModal(unittest.IsolatedAsyncioTestCase):
 
 
 # ==========================================================
-# TAView.remove_from_queue 按钮
+# TAView.remove_from_queue button
 # ==========================================================
 
 class TestTAViewRemoveButton(unittest.IsolatedAsyncioTestCase):
