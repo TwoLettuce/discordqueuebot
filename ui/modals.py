@@ -1,9 +1,8 @@
 import discord
 from datetime import datetime
 from db import get_times_helped_today, record_bot_issue
-from ui.helpers.discord_helpers import get_channel, get_role, update_queue_messages
+from ui.helpers.discord_helpers import get_channel, get_role, update_queue_messages, notify_next_if_changed
 from ui.helpers.constants import SHORT_TIMEOUT, TA_TEXT_CHANNEL_NAME
-from ui.helpers.discord_helpers import get_channel, get_role, notify_next_if_changed, update_queue_messages
 class HelpModal(discord.ui.Modal, title="Request Help"):
 
     name = discord.ui.TextInput(
