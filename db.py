@@ -47,6 +47,38 @@ def _initialize_database() -> None:
             """
         )
 
+            # original SQL table from old help queue
+            # """
+            # CREATE TABLE IF NOT EXISTS queue_history (
+            #     id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+            #     NetId TEXT NOT NULL,
+            #     removedBy TEXT NOT NULL,
+            #     enqueueTime INTEGER NOT NULL,
+            #     dequeueTime INTEGER NOT NULL,
+            #     QUESTION TEXT,
+            #     PASSOFF Bit,
+            #     DoneGettingHelpTime INTEGER,
+            #     ZOOMLINK TEXT,
+            #     )
+            # """
+        
+        # dequeue_time refers to the TA offering help, as the student is no longer waiting in the queue
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS queue_history (
+               id INTEGER NOT NULL PRIMARY KEY,
+                user_name TEXT NOT NULL,
+                student_name TEXT NOT NULL,
+                removed_by TEXT NOT NULL,
+                enqueue_time INTEGER NOT NULL,
+                dequeue_time INTEGER NOT NULL,
+                question TEXT,
+                is_passoff Bit,
+                done_getting_help_time INTEGER,
+                )
+            """
+        )
+
         # Ensure queue_settings has a default row
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM queue_settings")
