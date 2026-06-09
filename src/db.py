@@ -278,14 +278,13 @@ def _get_dequeue_time(id: int) -> datetime:
     
 
 def set_time_helped(id: int):
+    print(id)
     now = datetime.now()
-    then = _get_dequeue_time(id)
-    time_helped: datetime = now - then
     cursor = conn.cursor()
     cursor.execute(
         """
-        UPDATE queue_history SET help_time = ? WHERE id = ?
-        """, (time_helped.isoformat(), id)
+        UPDATE queue_history SET finished_time = ? WHERE id = ?
+        """, (now.isoformat(), id)
     )
     conn.commit()
 
