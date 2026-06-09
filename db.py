@@ -66,7 +66,7 @@ def _initialize_database() -> None:
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS queue_history (
-               id INTEGER NOT NULL PRIMARY KEY,
+                id INTEGER NOT NULL PRIMARY KEY,
                 user_name TEXT NOT NULL,
                 student_name TEXT NOT NULL,
                 removed_by TEXT NOT NULL,
@@ -74,6 +74,7 @@ def _initialize_database() -> None:
                 dequeue_time INTEGER NOT NULL,
                 question TEXT,
                 is_passoff Bit,
+                in_person Bit,
                 done_getting_help_time INTEGER,
                 )
             """
