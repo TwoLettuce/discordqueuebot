@@ -1,9 +1,8 @@
 import discord
 from datetime import datetime
 from db import get_times_helped_today, record_bot_issue
-from ui.helpers.discord_helpers import get_channel, get_role, update_queue_messages
+from ui.helpers.discord_helpers import get_channel, get_role, update_queue_messages, notify_next_if_changed
 from ui.helpers.constants import SHORT_TIMEOUT, TA_TEXT_CHANNEL_NAME
-
 class HelpModal(discord.ui.Modal, title="Request Help"):
 
     name = discord.ui.TextInput(
@@ -162,25 +161,36 @@ class ClearConfirmModal(discord.ui.Modal, title="Clear Confirmation"):
 
 
 class RemoveConfirmModal(discord.ui.Modal, title="Removal Confirmation"):
-    warning = discord.ui.TextDisplay("Are you sure? This will remove the student from the queue.")
-    input: discord.ui.TextInput = discord.ui.TextInput(label="Please input student username.", placeholder="bsharplydian", min_length=1)
-    reason: discord.ui.TextInput = discord.ui.TextInput(label="Provide a reason (optional)", placeholder="You've used the queue too many times today", required=False)
+    reason: discord.ui.TextInput = discord.ui.TextInput(
+        label="Provide a reason (optional)",
+        placeholder="You've used the queue too many times today",
+        required=False,
+        max_length=200
+    )
+
+    def __init__(self, student_user_id: int, student_name: str):
+        super().__init__()
+        self.student_user_id = student_user_id
+        self.student_name = student_name
+        self.add_item(discord.ui.TextDisplay(
+            f"This will remove {student_name} from the queue."
+        ))
 
     async def on_submit(self, interaction: discord.Interaction):
-        for entry in interaction.client.queue.entries:
-            if entry.username == self.input.value:
-                
-                # TODO: update queue_history (add/update a row with done_getting_help_time or time_helped depending on implementation)
+        front_before = await interaction.client.queue.get_front()
+        user: discord.User = await interaction.client.fetch_user(self.student_user_id)
+        await interaction.client.queue.remove(self.student_user_id)
+        await update_queue_messages(interaction.client)
 
-                user: discord.User = await interaction.client.fetch_user(entry.user_id)
-                await interaction.client.queue.remove(user.id)
-                await update_queue_messages(interaction.client)
-                await user.send(f"You have been removed from the CS240 help queue. {"Reason: " if self.reason.value != "" else ""}{self.reason.value}")
-                await interaction.response.send_message(f"{user.display_name} has been removed from the queue by {interaction.user.display_name}.", delete_after=60*5)
-                return
-            
-        await interaction.response.send_message(f"No student with the username \"{self.input.value}\" in the queue.", ephemeral=True, delete_after=10)
-
+        await notify_next_if_changed(interaction.client, front_before)
+        reason_suffix = f" Reason: {self.reason.value}" if self.reason.value else ""
+        await user.send(
+            f"You have been removed from the CS240 help queue.{reason_suffix}"
+        )
+        await interaction.response.send_message(
+            f"{user.display_name} has been removed from the queue by {interaction.user.display_name}.",
+            delete_after=60 * 5
+        )
 
 class EditQueueHoursModal(discord.ui.Modal, title="Edit Queue Hours"):
     open_hour = discord.ui.TextInput(
