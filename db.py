@@ -53,15 +53,14 @@ def _initialize_database() -> None:
             """
             CREATE TABLE IF NOT EXISTS queue_history (
                 id INTEGER PRIMARY KEY,
-                user_name TEXT NOT NULL,
                 student_name TEXT NOT NULL,
-                removed_by TEXT NOT NULL,
+                TA_name TEXT NOT NULL,
+                question TEXT,
                 enqueue_time TEXT NOT NULL,
                 dequeue_time TEXT NOT NULL,
-                question TEXT,
                 is_passoff INTEGER CHECK (is_passof IN (0,1)),
                 in_person INTEGER CHECK (in_person IN (0,1)),
-                done_getting_help_time TEXT
+                time_finished TEXT
                 )
             """
         )
