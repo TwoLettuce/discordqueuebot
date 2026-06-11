@@ -78,6 +78,8 @@ class TAQueueControls1(discord.ui.ActionRow[discord.ui.LayoutView]):
         if not entry:
             return await interaction.response.send_message("Queue is empty.", ephemeral=True, delete_after=SHORT_TIMEOUT)
 
+        # TODO: update queue_history (add a row with the dequeue time)
+
         if not entry.is_passoff:
             increment_help(entry.user_id, entry.username, entry.student_name)
 
@@ -102,6 +104,8 @@ class TAQueueControls1(discord.ui.ActionRow[discord.ui.LayoutView]):
 
         if not entry:
             return await interaction.response.send_message("No online students in the queue.", ephemeral=True, delete_after=SHORT_TIMEOUT)
+
+        # TODO: update queue_history (add a row with the dequeue time)
 
         if not entry.is_passoff:
             increment_help(entry.user_id, entry.username, entry.student_name)
@@ -132,6 +136,8 @@ class TAQueueControls2(discord.ui.ActionRow[discord.ui.LayoutView]):
         if not entry:
             return await interaction.response.send_message("No students awaiting passoff.", ephemeral=True, delete_after=SHORT_TIMEOUT)
 
+        # TODO: update queue_history (add a row with the dequeue time)
+
         await move_to_breakout(interaction, entry)
 
         # Notify the next student in line only if they changed
@@ -153,6 +159,8 @@ class TAQueueControls2(discord.ui.ActionRow[discord.ui.LayoutView]):
         if not entry:
             return await interaction.response.send_message("No online students awaiting passoff.", ephemeral=True, delete_after=SHORT_TIMEOUT)
 
+        # TODO: update queue_history (add a row with the dequeue time)
+
         await move_to_breakout(interaction, entry)
 
         # Notify the next student in line only if they changed
@@ -169,6 +177,8 @@ class TAQueueControls3(discord.ui.ActionRow[discord.ui.LayoutView]):
     @discord.ui.button(label="Finish Helping Student", style=discord.ButtonStyle.green, custom_id="finish", emoji="🔚")
     async def finish_button(self, interaction: discord.Interaction, button):
         online_ta_vc: discord.VoiceChannel = get_channel(interaction, TA_VOICE_CHANNEL_NAME)
+
+        # TODO: update queue_history (update row with done_getting_help_time or time_helped depending on implementation)
 
         try:
             ta_voice_state: discord.VoiceState = await interaction.user.fetch_voice()

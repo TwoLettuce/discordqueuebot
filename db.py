@@ -47,6 +47,24 @@ def _initialize_database() -> None:
             """
         )
 
+        
+        # dequeue_time refers to the time the TA begins helping the student, as the student is no longer waiting in the queue
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS queue_history (
+                id INTEGER PRIMARY KEY,
+                student_name TEXT NOT NULL,
+                TA_name TEXT NOT NULL,
+                question TEXT,
+                enqueue_time TEXT NOT NULL,
+                dequeue_time TEXT NOT NULL,
+                is_passoff INTEGER CHECK (is_passof IN (0,1)),
+                in_person INTEGER CHECK (in_person IN (0,1)),
+                time_finished TEXT
+                )
+            """
+        )
+
         # Ensure queue_settings has a default row
         cursor = conn.cursor()
         cursor.execute("SELECT COUNT(*) FROM queue_settings")
