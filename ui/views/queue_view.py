@@ -44,7 +44,13 @@ class QueueRequests(discord.ui.ActionRow[discord.ui.LayoutView]):
                 delete_after=DEFAULT_TIMEOUT,
             )
         else:
-            expected_wait = calculate_expected_wait_time(count_total_tas_in_voice(interaction = interaction), len(interaction.client.queue.entries)) * (pos) 
+            num_tas = count_total_tas_in_voice(interaction=interaction)
+            expected_wait = calculate_expected_wait_time(
+                num_tas,
+                len(interaction.client.queue.entries),
+                available_tas= num_tas - len(interaction.client.help_map.keys()),
+                position=pos,
+            )
             await interaction.response.send_message(
                 f"You are currently #{pos} in the queue. You will be helped in approximately {expected_wait // 60}m {expected_wait % 60}s.",
                 ephemeral=True,

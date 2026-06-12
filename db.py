@@ -81,21 +81,6 @@ def _initialize_database() -> None:
 
 _initialize_database()
 
-@tasks.loop(
-    time=time(
-        hour=23,
-        minute=59,
-        tzinfo=ZoneInfo("America/Denver")
-    )
-)
-async def daily_reset() -> None:
-    cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE user_stats SET daily_help = 0"
-    )
-    conn.commit()
-
-    print("Daily help counts reset.")
 
 
 def increment_help(user_id: int, user_name: str, student_name: Optional[str] = None) -> None:
@@ -329,6 +314,23 @@ def get_queue_history() -> list:
     cursor.execute("SELECT * FROM queue_history")
     return [row for row in cursor.fetchall()]
     
+
+#Reset daily help queue counts
+@tasks.loop(
+    time=time(
+        hour=23,
+        minute=59,
+        tzinfo=ZoneInfo("America/Denver")
+    )
+)
+async def daily_reset() -> None:
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE user_stats SET daily_help = 0"
+    )
+    conn.commit()
+
+    print("Daily help counts reset.")
 
 
 # Queue auto-open/close scheduled tasks
