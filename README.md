@@ -84,7 +84,7 @@ Suggested permissions:
 
 #### 4. Save the bot token
 
-Create a file named `.env` with the following contents:
+Create a file named `.env` in the `src/resources` directory with the following contents:
 
 ```txt
 TOKEN=your-discord-bot-token-here
