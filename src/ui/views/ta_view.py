@@ -95,6 +95,13 @@ class TAQueueControls2(discord.ui.ActionRow[discord.ui.LayoutView]):
 
 
 async def help_next_student(interaction: discord.Interaction, passoff_only: bool = False, online_only: bool = False, error_msg: str = "Queue is empty."):
+    if (interaction.user.name in interaction.client.help_map.keys()):
+        await interaction.response.send_message(
+            "You are currently helping a student! Use \"Finish Helping Student\" to be able to help more students!", 
+            ephemeral=True, delete_after=SHORT_TIMEOUT
+        )
+        return
+
     front_before = await interaction.client.queue.get_front()
 
     entry: Optional[QueueEntry] = await interaction.client.queue.next(passoff_only=passoff_only, online_only=online_only)
