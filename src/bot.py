@@ -132,19 +132,17 @@ class Bot(discord.Client):
         if not self.queue.is_open:
             return ""
 
+        # compute expected wait time using recent queue history, available tas, and queue size
         ta_voice_channel = await self._get_ta_voice_channel()
         guild = ta_voice_channel.guild if ta_voice_channel else next(iter(self.guilds), None)
         num_tas = count_total_tas_in_voice(guild=guild)
+        from service.queue_history_service import calculate_expected_wait_time
+        async with self.queue.lock:
+            queue_size = len(self.queue.entries)
         available_tas = num_tas - len(self.help_map.keys())
-        if available_tas > 0 and len(self.queue.entries) < 1:
-            time = 20
-        else:
-            # compute expected wait time using recent queue history
-            from service.queue_history_service import calculate_expected_wait_time
-            async with self.queue.lock:
-                queue_size = len(self.queue.entries)
-            time = calculate_expected_wait_time(num_tas, queue_size)
-            time = max(time, 180)
+        
+        #calculate wait time as if you were to join the queue right now
+        time = calculate_expected_wait_time(num_tas, queue_size, available_tas, position=queue_size+1)
         minutes = int(time // 60)
         seconds = time % 60
         return f" — expected wait: {minutes}m {seconds}s"
