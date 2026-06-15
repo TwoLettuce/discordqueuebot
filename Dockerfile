@@ -7,5 +7,7 @@ COPY ./src .
 # install python dependencies
 RUN pip install --no-cache-dir -r ./resources/requirements.txt
 
+RUN apt-get update && apt-get install -y ffmpeg
+
 CMD ["python", "bot.py"]
 
