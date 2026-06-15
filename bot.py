@@ -8,7 +8,7 @@ from ui.helpers.constants import HELP_CHANNEL_NAME, TA_TEXT_CHANNEL_NAME, TA_VOI
 from ui.helpers.discord_helpers import update_queue_messages, count_total_tas_in_voice
 from records import QueueEntry
 from datetime import datetime
-from db import daily_reset, auto_queue_scheduler
+from db import daily_reset, auto_queue_scheduler, set_time_helped
 
 import os
 import random
@@ -45,6 +45,7 @@ class Bot(discord.Client):
         daily_reset.start()
         auto_queue_scheduler.start(self) 
         asyncio.create_task(self._refresh_queue_status_messages())    
+        asyncio.create_task(self._refresh_help_map()) 
         await self.tree.sync()
 
     async def on_ready(self):
@@ -229,6 +230,35 @@ class Bot(discord.Client):
                 break
             except Exception as e:
                 print(f"Queue refresh task error: {e}")
+
+    async def _refresh_help_map(self) -> None:
+        """Removes any TAs not currently online from the help_map to avoid problems with TAs forgetting to click "finish helping student"."""
+        while True:
+            try:
+                await asyncio.sleep(60*20)
+                
+                # get all online TAs
+                for guild in self.guilds:
+                    online_ta_names = []
+                    ta_role = get(guild.roles, name="TA")
+                    for voice_channel in guild.voice_channels:
+                        online_ta_names.extend([member.name for member in voice_channel.members if ta_role in getattr(member, "roles", [])])
+                    
+                # deduce which TAs should no longer be helping students
+                tas_to_remove = []
+                for name in self.help_map.keys():
+                    if name not in online_ta_names:
+                        tas_to_remove.append(name)
+                
+                # remove them from the help_map and update the db table
+                for ta in tas_to_remove:
+                    tableid, _ = self.help_map.pop(ta)
+                    set_time_helped(tableid)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"Refresh Help map task error: {e}")
+
 
 
     async def queue_handler(self, interaction: discord.Interaction, question, is_passoff, in_person, student_name: str):
