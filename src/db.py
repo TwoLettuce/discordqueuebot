@@ -2,7 +2,7 @@ import io
 import sqlite3
 import discord
 import csv
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from typing import List, Optional
 from zoneinfo import ZoneInfo
 from discord.ext import tasks
@@ -34,6 +34,7 @@ def _initialize_database() -> None:
             """
             CREATE TABLE IF NOT EXISTS bot_incidents (
                 id INTEGER PRIMARY KEY,
+                reported_by VARCHAR(50),
                 incident_timestamp TEXT,
                 incident TEXT
             )
@@ -131,29 +132,33 @@ def _update_student_name(user_id: int, student_name: str) -> None:
         )
         conn.commit()
 
-def record_bot_issue(timestamp: datetime, issue: str) -> None:
+def record_bot_issue(username: str, issue: str) -> None:
     cursor = conn.cursor()
+    timestamp = datetime.now(tz=timezone.utc)
     cursor.execute(
-        "INSERT INTO bot_incidents (incident_timestamp, incident) VALUES (?, ?)",
-        (timestamp.isoformat(), issue)
+        "INSERT INTO bot_incidents (incident_timestamp, reported_by, incident) VALUES (?, ?, ?)",
+        (timestamp.isoformat(), username, issue)
     )
     conn.commit()
 
 
-def get_last_incident_info() -> tuple[Optional[int], Optional[str]]:
+def get_last_incident_info() -> tuple[Optional[str], Optional[int], Optional[str]]:
+    """Get information for most recent bot issue. 
+    Returns:
+        A tuple of 3 elements containing the user who reported the issue, the number of days since the issue, and the issue description, in that order."""
     cursor = conn.cursor()
-    cursor.execute("SELECT incident_timestamp, incident FROM bot_incidents ORDER BY incident_timestamp DESC LIMIT 1")
+    cursor.execute("SELECT reported_by, incident_timestamp, incident FROM bot_incidents ORDER BY incident_timestamp DESC LIMIT 1")
     row = cursor.fetchone()
-    if not row or not row[0]:
-        return None, None
+    if not row:
+        return None, None, None
 
     try:
-        last_incident_time = datetime.fromisoformat(row[0])
+        last_incident_time = datetime.fromisoformat(row["incident_timestamp"])
     except ValueError:
-        return None, row[1] or None
+        return row["reported_by"] or None, None, row["incident"] or None
 
-    delta = datetime.now() - last_incident_time
-    return delta.days, row[1] or None
+    delta = datetime.now(tz=timezone.utc) - last_incident_time
+    return row["reported_by"] or None, delta.days, row["incident"] or None
 
 
 def get_student_info() -> tuple[List[str], List[tuple[str, int, int]]]:
