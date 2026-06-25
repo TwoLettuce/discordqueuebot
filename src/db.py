@@ -69,6 +69,17 @@ def _initialize_database() -> None:
             """
         )
 
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS channel_ids (
+                guild_id INTEGER PRIMARY KEY,
+                bot_role_id INTEGER,
+                category_id INTEGER,
+                help_queue_id INTEGER
+            )
+            """
+        )
+
 
         # Ensure queue_settings has a default row
         cursor = conn.cursor()
@@ -311,7 +322,55 @@ def get_queue_history() -> list:
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM queue_history")
     return [row for row in cursor.fetchall()]
-    
+
+
+def get_category_id(guild_id: int) -> int:
+    cursor = conn.cursor()
+    cursor.execute("SELECT category_id FROM channel_ids WHERE guild_id = ?", (guild_id,))
+    row = cursor.fetchone()
+
+    return row[0] if row else -1
+
+def set_category_id(guild_id: int, category_id: int):
+    cursor = conn.cursor()
+    cursor.execute("""INSERT INTO channel_ids (guild_id, category_id) 
+                   VALUES (?, ?)
+                   ON CONFLICT(guild_id) 
+                   DO UPDATE SET category_id = excluded.category_id""",
+                   (guild_id, category_id))
+    conn.commit()
+
+def get_help_queue_id(guild_id: int) -> int:
+    cursor = conn.cursor()
+    cursor.execute("SELECT help_queue_id FROM channel_ids WHERE guild_id = ?", (guild_id,))
+    row = cursor.fetchone()
+
+    return row[0] if row else -1
+
+def set_help_queue_id(guild_id: int, help_queue_id: int):
+    cursor = conn.cursor()
+    cursor.execute("""INSERT INTO channel_ids (guild_id, help_queue_id) 
+                   VALUES (?, ?)
+                   ON CONFLICT(guild_id) 
+                   DO UPDATE SET help_queue_id = excluded.help_queue_id""",
+                   (guild_id, help_queue_id))
+    conn.commit()
+
+def get_bot_role_id(guild_id: int) -> int:
+    cursor = conn.cursor()
+    cursor.execute("SELECT bot_role_id FROM channel_ids WHERE guild_id = ?", (guild_id,))
+    row = cursor.fetchone()
+
+    return row[0] if row else -1
+
+def set_bot_role_id(guild_id: int, bot_role_id: int):
+    cursor = conn.cursor()
+    cursor.execute("""INSERT INTO channel_ids (guild_id, bot_role_id) 
+                   VALUES (?, ?)
+                   ON CONFLICT(guild_id) 
+                   DO UPDATE SET bot_role_id = excluded.bot_role_id""",
+                   (guild_id, bot_role_id))
+    conn.commit()
 
 #Reset daily help queue counts
 @tasks.loop(

@@ -66,8 +66,8 @@ The bot expects the following channel and role names by default. Names are case-
   - `Bot` (so you can give it channel-specific permissions manually)
 
 Suggested permissions: 
-  - Restrict channel management server-wide for @everyone. Keep it enabled for @TA.
-  - Allow Bot to Move Members between Voice Channels server-wide.
+  - Enable channel management server-wide for @TA.
+  - Allow Bot to Move Members between Voice Channels in the help-queue category.
   - help-queue-chat: @everyone restrict messages/threads, etc. Keep reactions enabled. @TA and @Bot all permissions.
   - ta-bot-chat: @everyone cannot see the channel. @TA and @Bot all permissions.
   - Online TAs: @everyone cannot join the channel. @TA and @Bot all permissions.
@@ -90,19 +90,15 @@ Create a file named `.env` in the `src/resources` directory with the following c
 TOKEN=your-token-here
 ```
 
-#### 5. Under OAuth2 > URL Generator, enable scopes:
+#### 5. In OAuth2 > URL Generator, enable scopes:
    - `bot`
    - `applications.commands`
 
-#### 6. Under Bot Permissions, grant the following permissions:
-   - View Channels
-   - Send Messages
-   - Read Message History
-   - Manage Messages
-   - Connect
-   - Speak
-   - Use Voice Activity
-   - Use Slash Commands
+#### 6. In Installation:
+ - In Installation Contexts, deselect `User Install`
+ - In Install Link, Select `Discord Provided Link`
+ - In Default Install Settings, for `Scopes` enable `applications.commands` and `bot`, and for `Permissions` select `Manage Channels`, `Manage Messages`, `Manage Roles`, and `Move Members`
+
 
 #### 7. Generate the invite URL, open it in your browser, and invite the bot to your server.
 
@@ -112,7 +108,7 @@ TOKEN=your-token-here
 
 #### 1. Ensure your `.env` file contains the bot token.
 #### 2. If you want voice alerts, place one or more `.mp3` files in the `resources/` folder.
-#### 3. Start the bot from the src directory in the virtual environment:
+#### 3. Start the bot from the src directory (using the virtual environment, if you set one up):
 
 ```powershell
 cd src
@@ -120,7 +116,7 @@ python bot.py
 ```
 
 #### 4. Use the application commands
-
+   - The only one you should need to run is 'setup'. The other commands are just backups in case the button views get deleted.
    - Use the command for the students' help queue buttons in help-queue-chat
    - Use the command for the TAs' help queue buttons in ta-bot-chat
 

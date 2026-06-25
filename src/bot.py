@@ -6,6 +6,7 @@ from ui.views.queue_view import QueueView
 from ui.views.ta_view import TAView
 from ui.helpers.constants import HELP_CHANNEL_NAME, TA_TEXT_CHANNEL_NAME, TA_VOICE_CHANNEL_NAME
 from ui.helpers.discord_helpers import update_queue_messages, count_total_tas_in_voice
+from server_script import setup_server
 from records import QueueEntry
 from datetime import datetime
 from db import daily_reset, auto_queue_scheduler, set_time_finished
@@ -305,6 +306,21 @@ async def ta_panel(interaction: discord.Interaction):
     await interaction.response.send_message(
         view=TAView()
     )
+
+@bot.tree.command(name="setup")
+async def setup(interaction: discord.Interaction):
+    await interaction.response.defer(thinking=True, ephemeral=True)
+    try:
+        await setup_server(interaction)
+    except PermissionError as e:
+        await interaction.followup.send("Missing required permissions! See logs!")
+        raise e
+    except Exception as e:
+        await interaction.followup.send("Some kind of unknown error occured!")
+        raise e
+    await interaction.followup.send("Setup complete! Bot is ready to go!")
+
+    
 
 token: str = os.getenv("TOKEN")
 bot.run(token)
