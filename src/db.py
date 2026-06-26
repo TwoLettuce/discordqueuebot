@@ -76,6 +76,7 @@ def _initialize_database() -> None:
                 category_id INTEGER,
                 help_queue_id INTEGER,
                 ta_bot_channel_id INTEGER,
+                online_tas_id INTEGER,
                 bot_role_id INTEGER,
                 ta_role_id INTEGER,
                 professor_role_id INTEGER

@@ -14,6 +14,7 @@ async def setup_server(interaction: discord.Interaction):
     category: discord.CategoryChannel = get(interaction.guild.categories, id=server_info_dao.get_id("category_id", interaction.guild.id))
     await _help_queue_channel_init(interaction, category)
     await _ta_bot_channel_init(interaction, category)
+    await _online_tas_init(interaction, category)
 
 async def takedown(interaction: discord.Interaction):
     """Only used for testing. Deletes all roles and channels, except for the 'general' text channel."""
@@ -119,8 +120,7 @@ async def _help_queue_channel_init(interaction: discord.Interaction, category: d
 
 async def _ta_bot_channel_init(interaction: discord.Interaction, category: discord.CategoryChannel):
     ta_bot_channel_id = server_info_dao.get_id("ta_bot_channel_id", interaction.guild.id)
-    channels = category.channels
-    ta_bot_channel: discord.TextChannel = get(channels, id=ta_bot_channel_id)
+    ta_bot_channel: discord.TextChannel = get(category.channels, id=ta_bot_channel_id)
     if not ta_bot_channel:
         ta_bot_channel = await category.create_text_channel("ta_bot_channel")
         server_info_dao.set_id("ta_bot_channel_id", interaction.guild.id, ta_bot_channel.id)
@@ -139,3 +139,23 @@ async def _ta_bot_channel_init(interaction: discord.Interaction, category: disco
     # must be done last so that the bot can still see the channel
     await ta_bot_channel.set_permissions(interaction.guild.default_role, overwrite=everyone_permissions)
 
+async def _online_tas_init(interaction: discord.Interaction, category: discord.CategoryChannel):
+    online_tas_id = server_info_dao.get_id("online_tas_id", interaction.guild.id)
+    online_tas: discord.VoiceChannel = get(category.voice_channels, id=online_tas_id)
+    if not online_tas:
+        online_tas = await category.create_voice_channel("Online TAs", user_limit=5)
+        server_info_dao.set_id("online_tas_id", interaction.guild.id, online_tas.id)
+    
+    other_permissions = discord.PermissionOverwrite(connect=True)
+    
+    for role in interaction.guild.roles:
+        if role == interaction.guild.default_role:
+            continue
+        elif role in interaction.guild.me.roles:
+            await online_tas.set_permissions(interaction.guild.me, overwrite=other_permissions)
+        else:
+            await online_tas.set_permissions(role, overwrite=other_permissions)
+
+    # must be done last so that the bot can still see the channel
+    everyone_permissions = discord.PermissionOverwrite(connect=False)
+    await online_tas.set_permissions(interaction.guild.default_role, overwrite=everyone_permissions)

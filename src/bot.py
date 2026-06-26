@@ -324,7 +324,7 @@ async def setup(interaction: discord.Interaction):
 async def reset(interaction: discord.Interaction):
     await interaction.response.defer(thinking=True, ephemeral=True)
     await takedown(interaction)
-    await interaction.followup.send("hey")
+    await interaction.followup.send("Reset Complete!")
 
     
 
