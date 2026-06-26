@@ -42,7 +42,6 @@ def _save_bot_role_id(interaction: discord.Interaction):
             set_bot_role_id(interaction.guild.id, role.id)
 
 async def _category_init(interaction: discord.Interaction):
-    print('category init')
     category_id: int = get_category_id(interaction.guild.id)
     guild_categories = interaction.guild.categories
     help_category = get(guild_categories, id=category_id)
@@ -55,7 +54,6 @@ async def _category_init(interaction: discord.Interaction):
     await help_category.set_permissions(interaction.guild.me, overwrite=bot_permissions)
 
 async def _help_queue_channel_init(interaction: discord.Interaction, category: discord.CategoryChannel):
-    print("help_queue_channel init")
     help_queue_channel_id = get_help_queue_id(interaction.guild.id)
     channels = category.channels
     help_queue_channel = get(channels, id=help_queue_channel_id)
@@ -64,9 +62,10 @@ async def _help_queue_channel_init(interaction: discord.Interaction, category: d
         set_help_queue_id(interaction.guild.id, help_queue_channel.id)
 
     everyone_permissions = discord.PermissionOverwrite(send_messages=False, create_public_threads=False)
-    help_queue_channel.set_permissions(interaction.guild.default_role, overwrite=everyone_permissions)
+    await help_queue_channel.set_permissions(interaction.guild.default_role, overwrite=everyone_permissions)
 
     other_permissions = discord.PermissionOverwrite(send_messages=True)
     for role in interaction.guild.roles:
         if role != interaction.guild.default_role:
-            help_queue_channel.set_permissions(role, overwrite=other_permissions)
+            print(f"overwriting permissions for {role.name}")
+            await help_queue_channel.set_permissions(role, overwrite=other_permissions)
