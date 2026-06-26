@@ -15,6 +15,7 @@ async def setup_server(interaction: discord.Interaction):
     await _help_queue_channel_init(interaction, category)
     await _ta_bot_channel_init(interaction, category)
     await _online_tas_init(interaction, category)
+    await _waiting_room_init(interaction, category)
 
 async def takedown(interaction: discord.Interaction):
     """Only used for testing. Deletes all roles and channels, except for the 'general' text channel."""
@@ -159,3 +160,11 @@ async def _online_tas_init(interaction: discord.Interaction, category: discord.C
     # must be done last so that the bot can still see the channel
     everyone_permissions = discord.PermissionOverwrite(connect=False)
     await online_tas.set_permissions(interaction.guild.default_role, overwrite=everyone_permissions)
+
+
+async def _waiting_room_init(interaction: discord.Interaction, category: discord.CategoryChannel):
+    waiting_room_id = server_info_dao.get_id("waiting_room_id", interaction.guild.id)
+    waiting_room: discord.VoiceChannel = get(category.voice_channels, id=waiting_room_id)
+    if not waiting_room:
+        waiting_room = await category.create_voice_channel("Waiting Room")
+        server_info_dao.set_id("waiting_room_id", interaction.guild.id, waiting_room.id)
