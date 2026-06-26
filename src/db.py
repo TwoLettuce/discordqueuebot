@@ -69,18 +69,15 @@ def _initialize_database() -> None:
             """
         )
 
+        
+
         conn.execute(
             """
             CREATE TABLE IF NOT EXISTS server_ids (
-                guild_id INTEGER PRIMARY KEY,
-                category_id INTEGER,
-                help_queue_id INTEGER,
-                ta_bot_channel_id INTEGER,
-                online_tas_id INTEGER,
-                bot_role_id INTEGER,
-                ta_role_id INTEGER,
-                professor_role_id INTEGER
-
+                guild_id INTEGER,
+                resource_name TEXT,
+                resource_id,
+                PRIMARY KEY(guild_id, resource_name)
             )
             """
         )
@@ -330,20 +327,18 @@ def get_queue_history() -> list:
 
 class ServerInfoDao:
 
-    def set_id(self, name: str, guild_id: int, role_id: int):
-        self._verify_name(name)
+    def set_id(self, name: str, guild_id: int, id: int):
         cursor = conn.cursor()
-        cursor.execute(f"""INSERT INTO server_ids (guild_id, {name})
-                    VALUES (?, ?)
-                    ON CONFLICT(guild_id) 
-                    DO UPDATE SET {name} = excluded.{name}""",
-                    (guild_id, role_id))
+        cursor.execute("""INSERT INTO server_ids (guild_id, resource_name, resource_id)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(guild_id, resource_name) 
+                    DO UPDATE SET resource_id = excluded.resource_id""",
+                    (guild_id, name, id))
         conn.commit()
 
     def get_id(self, name: str, guild_id: int):
-        self._verify_name(name)
         cursor = conn.cursor()
-        cursor.execute(f"SELECT {name} FROM server_ids WHERE guild_id = ?", (guild_id,))
+        cursor.execute("SELECT resource_id FROM server_ids WHERE (guild_id, resource_name) = (?, ?)", (guild_id,name))
         row = cursor.fetchone()
 
         return row[0] if row else -1
