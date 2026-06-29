@@ -72,7 +72,9 @@ async def __save_ta_role_id(interaction: discord.Interaction):
         if role.id == ta_role_id:
             return
     
-    ta_role: discord.Role = await interaction.guild.create_role(name=Roles.TA_ROLE, colour=discord.Colour.blue(), mentionable=True)
+    ta_role = get(interaction.guild.roles, name=Roles.TA_ROLE)
+    if not ta_role:
+        ta_role: discord.Role = await interaction.guild.create_role(name=Roles.TA_ROLE, colour=discord.Colour.blue(), mentionable=True)
     server_info_dao.set_id(Roles.TA_ROLE, interaction.guild.id, ta_role.id)
 
 async def __save_professor_role_id(interaction: discord.Interaction):
@@ -80,17 +82,24 @@ async def __save_professor_role_id(interaction: discord.Interaction):
     for role in interaction.guild.roles:
         if role.id == professor_role_id:
             return
-    
-    ta_role: discord.Role = await interaction.guild.create_role(name=Roles.PROFESSOR_ROLE, colour=discord.Colour.orange())
-    server_info_dao.set_id(Roles.PROFESSOR_ROLE, interaction.guild.id, ta_role.id)
+        
+    professor_role = get(interaction.guild.roles, name=Roles.PROFESSOR_ROLE)
+    if not professor_role:
+        professor_role: discord.Role = await interaction.guild.create_role(name=Roles.PROFESSOR_ROLE, colour=discord.Colour.orange())
+    server_info_dao.set_id(Roles.PROFESSOR_ROLE, interaction.guild.id, professor_role.id)
 
 async def _category_init(interaction: discord.Interaction):
     category_id: int = server_info_dao.get_id(Categories.HELP_QUEUE_CATEGORY, interaction.guild.id)
-    guild_categories = interaction.guild.categories
-    help_category = get(guild_categories, id=category_id)
+    for category in interaction.guild.categories:
+        if category.id == category_id:
+            return
+        
+    help_category = get(interaction.guild.categories, name=Categories.HELP_QUEUE_CATEGORY)
+    
     if help_category is None:
         help_category = await interaction.guild.create_category(Categories.HELP_QUEUE_CATEGORY)
-        server_info_dao.set_id(Categories.HELP_QUEUE_CATEGORY, interaction.guild.id, help_category.id)
+    
+    server_info_dao.set_id(Categories.HELP_QUEUE_CATEGORY, interaction.guild.id, help_category.id)
 
     bot_permissions = discord.PermissionOverwrite(move_members=True)
     
@@ -99,12 +108,16 @@ async def _category_init(interaction: discord.Interaction):
 async def _help_queue_channel_init(interaction: discord.Interaction, category: discord.CategoryChannel):
     help_queue_channel_id = server_info_dao.get_id(Channels.HELP_CHANNEL_NAME, interaction.guild.id)
     channels = category.channels
-    help_queue_channel: discord.TextChannel = get(channels, id=help_queue_channel_id)
+    for channel in category.channels:
+        if channel.id == help_queue_channel_id:
+            return
+    
+    help_queue_channel: discord.TextChannel = get(channels, name=Channels.HELP_CHANNEL_NAME)
     if not help_queue_channel:
         help_queue_channel = await category.create_text_channel(Channels.HELP_CHANNEL_NAME, position=0)
-        server_info_dao.set_id(Channels.HELP_CHANNEL_NAME, interaction.guild.id, help_queue_channel.id)
         await help_queue_channel.send(view=QueueView())
 
+    server_info_dao.set_id(Channels.HELP_CHANNEL_NAME, interaction.guild.id, help_queue_channel.id)
     everyone_permissions = discord.PermissionOverwrite(send_messages=False, create_public_threads=False)
 
     other_permissions = discord.PermissionOverwrite(send_messages=True)
@@ -119,12 +132,17 @@ async def _help_queue_channel_init(interaction: discord.Interaction, category: d
 
 async def _ta_bot_channel_init(interaction: discord.Interaction, category: discord.CategoryChannel):
     ta_bot_channel_id = server_info_dao.get_id(Channels.TA_TEXT_CHANNEL_NAME, interaction.guild.id)
-    ta_bot_channel: discord.TextChannel = get(category.channels, id=ta_bot_channel_id)
+    for channel in category.channels:
+        if channel.id == ta_bot_channel_id:
+            return
+        
+    ta_bot_channel: discord.TextChannel = get(category.channels, name=Channels.TA_TEXT_CHANNEL_NAME)
     if not ta_bot_channel:
         ta_bot_channel = await category.create_text_channel(Channels.TA_TEXT_CHANNEL_NAME, position=1)
-        server_info_dao.set_id(Channels.TA_TEXT_CHANNEL_NAME, interaction.guild.id, ta_bot_channel.id)
         await ta_bot_channel.send(view=TAView())
 
+    server_info_dao.set_id(Channels.TA_TEXT_CHANNEL_NAME, interaction.guild.id, ta_bot_channel.id)
+    
     everyone_permissions = discord.PermissionOverwrite(view_channel=False)
     other_permissions = discord.PermissionOverwrite(view_channel=True)
 
@@ -142,10 +160,14 @@ async def _ta_bot_channel_init(interaction: discord.Interaction, category: disco
 
 async def _online_tas_init(interaction: discord.Interaction, category: discord.CategoryChannel):
     online_tas_id = server_info_dao.get_id(Channels.TA_VOICE_CHANNEL_NAME, interaction.guild.id)
-    online_tas: discord.VoiceChannel = get(category.voice_channels, id=online_tas_id)
+    for channel in category.voice_channels:
+        if channel.id == online_tas_id:
+            return
+        
+    online_tas: discord.VoiceChannel = get(category.voice_channels, name=Channels.TA_VOICE_CHANNEL_NAME)
     if not online_tas:
         online_tas = await category.create_voice_channel(Channels.TA_VOICE_CHANNEL_NAME, position=2, user_limit=5)
-        server_info_dao.set_id(Channels.TA_VOICE_CHANNEL_NAME, interaction.guild.id, online_tas.id)
+    server_info_dao.set_id(Channels.TA_VOICE_CHANNEL_NAME, interaction.guild.id, online_tas.id)
     
     other_permissions = discord.PermissionOverwrite(connect=True)
     
@@ -167,17 +189,26 @@ async def _public_vcs_init(interaction: discord.Interaction, category: discord.C
     public_vc_names.extend(Channels.BREAKOUT_NAMES)
     for name in public_vc_names:
         channel_id = server_info_dao.get_id(name, interaction.guild.id)
-        voice_channel: discord.VoiceChannel = get(category.voice_channels, id=channel_id)
+        for vc in category.voice_channels:
+            if vc.id == channel_id:
+                continue
+        
+        voice_channel: discord.VoiceChannel = get(category.voice_channels, name=name)
         if not voice_channel:
             voice_channel = await category.create_voice_channel(name, position=3+public_vc_names.index(name))
-            server_info_dao.set_id(name, interaction.guild.id, voice_channel.id)
+
+        server_info_dao.set_id(name, interaction.guild.id, voice_channel.id)
 
 async def _in_person_init(interaction: discord.Interaction, category: discord.CategoryChannel):
     in_person_vc_id = server_info_dao.get_id(Channels.IN_PERSON_CHANNEL_NAME, interaction.guild.id)
-    in_person_vc: discord.VoiceChannel = get(category.voice_channels, id=in_person_vc_id)
+    for channel in category.voice_channels:
+        if channel.id == in_person_vc_id:
+            return
+        
+    in_person_vc: discord.VoiceChannel = get(category.voice_channels, name=Channels.IN_PERSON_CHANNEL_NAME)
     if not in_person_vc:
         in_person_vc = await category.create_voice_channel(Channels.IN_PERSON_CHANNEL_NAME, position=7)
-        server_info_dao.set_id(Channels.IN_PERSON_CHANNEL_NAME, interaction.guild.id, in_person_vc.id)
+    server_info_dao.set_id(Channels.IN_PERSON_CHANNEL_NAME, interaction.guild.id, in_person_vc.id)
     
     other_permissions = discord.PermissionOverwrite(connect=True)
     
