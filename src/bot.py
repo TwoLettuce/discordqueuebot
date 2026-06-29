@@ -4,6 +4,7 @@ from discord.utils import get
 from help_queue import HelpQueue
 from ui.views.queue_view import QueueView
 from ui.views.ta_view import TAView
+from ui.helpers.constants import Channels
 from ui.helpers.discord_helpers import update_queue_messages, count_total_tas_in_voice
 from server_script import setup_server, takedown
 from records import QueueEntry
@@ -58,7 +59,7 @@ class Bot(discord.Client):
                 self._player_task = asyncio.create_task(self._play_notifications())
 
     async def _get_ta_voice_channel(self, guild: discord.Guild) -> discord.VoiceChannel | None:
-        channel_id = server_info_dao.get_id("online_tas_id", guild.id)
+        channel_id = server_info_dao.get_id(Channels.TA_VOICE_CHANNEL_NAME, guild.id)
         return get(guild.voice_channels, id=channel_id)
             
 
@@ -121,11 +122,11 @@ class Bot(discord.Client):
         self._player_task = None
 
     async def _get_ta_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
-        channel_id = server_info_dao.get_id("ta_bot_channel_id", guild.id)
+        channel_id = server_info_dao.get_id(Channels.TA_TEXT_CHANNEL_NAME, guild.id)
         return get(guild.text_channels, id=channel_id)
         
     async def _get_help_channel(self, guild: discord.Guild) -> discord.TextChannel | None:
-        channel_id = server_info_dao.get_id("help_queue_id", guild.id)
+        channel_id = server_info_dao.get_id(Channels.HELP_CHANNEL_NAME, guild.id)
         return get(guild.text_channels, id=channel_id)
     
     async def _get_wait_time(self, guild: discord.Guild):

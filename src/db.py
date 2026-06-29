@@ -8,6 +8,7 @@ from zoneinfo import ZoneInfo
 from discord.ext import tasks
 from discord.utils import get
 from records import QueueEntry
+from ui.helpers.constants import Channels
 from ui.helpers.discord_helpers import update_queue_messages
 
 conn: sqlite3.Connection = sqlite3.connect("./resources/queue.db", detect_types=sqlite3.PARSE_DECLTYPES)
@@ -377,7 +378,7 @@ async def auto_queue_scheduler(bot_client: discord.Client) -> None:
     # Get TA text channel
     ta_channel = None
     for guild in bot_client.guilds:
-        channel_id: int = server_info_dao.get_id("ta_bot_channel_id", guild.id)
+        channel_id: int = server_info_dao.get_id(Channels.TA_TEXT_CHANNEL_NAME, guild.id)
         ta_channel = get(guild.text_channels, id=channel_id)
         message: str | None = None
         # Check if we should open (at the configured open time)

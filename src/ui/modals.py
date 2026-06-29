@@ -3,7 +3,8 @@ from discord.utils import get
 from datetime import datetime
 from db import get_times_helped_today, record_bot_issue, server_info_dao
 from ui.helpers.discord_helpers import get_channel, get_role, update_queue_messages, notify_next_if_changed
-from ui.helpers.constants import SHORT_TIMEOUT, TA_TEXT_CHANNEL_NAME
+from ui.helpers.constants import Channels, Messages
+
 class HelpModal(discord.ui.Modal, title="Request Help"):
 
     name = discord.ui.TextInput(
@@ -65,7 +66,7 @@ class HelpModal(discord.ui.Modal, title="Request Help"):
             delete_after=60*5
         )
 
-        channel_id = server_info_dao.get_id("ta_bot_channel_id", interaction.guild.id)
+        channel_id = server_info_dao.get_id(Channels.TA_TEXT_CHANNEL_NAME, interaction.guild.id)
         ta_channel: discord.TextChannel = get(interaction.guild.channels, id=channel_id)
         await ta_channel.send(
             f"{interaction.user.display_name} ({student_name}) has joined the help queue - {mode} - {self.question.value} "
@@ -112,7 +113,7 @@ class PassoffModal(discord.ui.Modal, title="Request Passoff"):
             ephemeral=True,
             delete_after=60*5
         )
-        channel_id = server_info_dao.get_id("ta_bot_channel_id", interaction.guild.id)
+        channel_id = server_info_dao.get_id(Channels.TA_TEXT_CHANNEL_NAME, interaction.guild.id)
         ta_channel: discord.TextChannel = get(interaction.guild.text_channels, id=channel_id)
         await ta_channel.send(
             f"{interaction.user.display_name} ({student_name}) has requested a passoff - {mode} - {self.phase.value}",
@@ -136,7 +137,7 @@ class BotIssueModal(discord.ui.Modal, title="Report Bot Problem"):
         ta_role = discord.utils.get(interaction.guild.roles, name="TA")
         ta_mention = ta_role.mention
         for channel in interaction.guild.channels:
-            if channel.name == TA_TEXT_CHANNEL_NAME:
+            if channel.name == Channels.TA_TEXT_CHANNEL_NAME:
                 await channel.send(
                     f"{ta_mention} {interaction.user.display_name} is having trouble with the bot. Description: {issue_text}"
                 )
@@ -235,7 +236,7 @@ class EditQueueHoursModal(discord.ui.Modal, title="Edit Queue Hours"):
                 await interaction.response.send_message(
                     "Hours must be 0-23 and minutes must be 0-59.",
                     ephemeral=True,
-                    delete_after=SHORT_TIMEOUT
+                    delete_after=Messages.SHORT_TIMEOUT
                 )
                 return
             
@@ -249,6 +250,6 @@ class EditQueueHoursModal(discord.ui.Modal, title="Edit Queue Hours"):
             await interaction.response.send_message(
                 "Please enter valid integers for hours and minutes.",
                 ephemeral=True,
-                delete_after=SHORT_TIMEOUT
+                delete_after=Messages.SHORT_TIMEOUT
             )
 
