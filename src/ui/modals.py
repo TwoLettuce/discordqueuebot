@@ -1,6 +1,5 @@
 import discord
 from discord.utils import get
-from datetime import datetime
 from db import get_times_helped_today, record_bot_issue, server_info_dao
 from ui.helpers.discord_helpers import get_channel, get_role, update_queue_messages, notify_next_if_changed
 from ui.helpers.constants import Channels, Messages
@@ -133,7 +132,7 @@ class BotIssueModal(discord.ui.Modal, title="Report Bot Problem"):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.send_message("The TAs have been notified. They will reach out to you if needed.", ephemeral=True, delete_after=30)
         issue_text = self.description.value.strip()
-        record_bot_issue(datetime.now(), issue_text)
+        record_bot_issue(interaction.user.mention, issue_text)
         ta_role = discord.utils.get(interaction.guild.roles, name="TA")
         ta_mention = ta_role.mention
         for channel in interaction.guild.channels:
