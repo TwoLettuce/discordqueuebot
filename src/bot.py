@@ -58,7 +58,7 @@ class Bot(discord.Client):
                 self._player_task = asyncio.create_task(self._play_notifications())
 
     async def _get_ta_voice_channel(self, guild: discord.Guild) -> discord.VoiceChannel | None:
-        channel_id = server_info_dao.get_id("online_tas_id")
+        channel_id = server_info_dao.get_id("online_tas_id", guild.id)
         return get(guild.voice_channels, id=channel_id)
             
 

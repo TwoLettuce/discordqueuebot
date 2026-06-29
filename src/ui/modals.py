@@ -1,6 +1,7 @@
 import discord
+from discord.utils import get
 from datetime import datetime
-from db import get_times_helped_today, record_bot_issue
+from db import get_times_helped_today, record_bot_issue, server_info_dao
 from ui.helpers.discord_helpers import get_channel, get_role, update_queue_messages, notify_next_if_changed
 from ui.helpers.constants import SHORT_TIMEOUT, TA_TEXT_CHANNEL_NAME
 class HelpModal(discord.ui.Modal, title="Request Help"):
@@ -64,7 +65,8 @@ class HelpModal(discord.ui.Modal, title="Request Help"):
             delete_after=60*5
         )
 
-        ta_channel: discord.TextChannel = get_channel(interaction, TA_TEXT_CHANNEL_NAME)
+        channel_id = server_info_dao.get_id("ta_bot_channel_id", interaction.guild.id)
+        ta_channel: discord.TextChannel = get(interaction.guild.channels, id=channel_id)
         await ta_channel.send(
             f"{interaction.user.display_name} ({student_name}) has joined the help queue - {mode} - {self.question.value} "
             f"(helped {times_helped} time{'s' if times_helped != 1 else ''} today)",
@@ -110,8 +112,8 @@ class PassoffModal(discord.ui.Modal, title="Request Passoff"):
             ephemeral=True,
             delete_after=60*5
         )
-
-        ta_channel: discord.TextChannel = get_channel(interaction, TA_TEXT_CHANNEL_NAME)
+        channel_id = server_info_dao.get_id("ta_bot_channel_id", interaction.guild.id)
+        ta_channel: discord.TextChannel = get(interaction.guild.text_channels, id=channel_id)
         await ta_channel.send(
             f"{interaction.user.display_name} ({student_name}) has requested a passoff - {mode} - {self.phase.value}",
             delete_after=30

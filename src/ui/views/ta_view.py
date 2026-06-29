@@ -1,12 +1,13 @@
 from typing import Optional
 
 import discord
-from db import get_last_incident_info, increment_help, get_student_info, set_time_finished, add_queue_history_item, get_queue_history_as_csv
+from discord.utils import get
+from db import get_last_incident_info, increment_help, get_student_info, set_time_finished, add_queue_history_item, get_queue_history_as_csv, server_info_dao
 from records import QueueEntry
 from ui.modals import ClearConfirmModal, RemoveConfirmModal
-from ui.helpers.constants import DEFAULT_TIMEOUT, SHORT_TIMEOUT, QUEUE_OPENED, QUEUE_ALREADY_OPEN, QUEUE_CLOSED, QUEUE_ALREADY_CLOSED, STUDENT_INFO_WIDTH, LONG_TIMEOUT, NOW_HELPING_TEMPLATE, TA_VOICE_CHANNEL_NAME
+from ui.helpers.constants import DEFAULT_TIMEOUT, SHORT_TIMEOUT, QUEUE_OPENED, QUEUE_ALREADY_OPEN, QUEUE_CLOSED, QUEUE_ALREADY_CLOSED, STUDENT_INFO_WIDTH, LONG_TIMEOUT, NOW_HELPING_TEMPLATE
 from ui.helpers.utils import fixed_width
-from ui.helpers.discord_helpers import get_channel, get_role, move_to_breakout, notify_next_if_changed, update_queue_messages
+from ui.helpers.discord_helpers import move_to_breakout, notify_next_if_changed, update_queue_messages
 
 
 
@@ -136,12 +137,13 @@ async def dequeue_student(interaction: discord.Interaction, front_before: Option
 class TAQueueControls3(discord.ui.ActionRow[discord.ui.LayoutView]):
     @discord.ui.button(label="Finish Helping Student", style=discord.ButtonStyle.green, custom_id="finish", emoji="🔚")
     async def finish_button(self, interaction: discord.Interaction, button):
-        online_ta_vc: discord.VoiceChannel = get_channel(interaction, TA_VOICE_CHANNEL_NAME)
+        channel_id = server_info_dao.get_id("online_tas_id", interaction.guild.id)
+        online_ta_vc: discord.VoiceChannel = get(interaction.guild.voice_channels, id=channel_id)
         
         try:
             ta_voice_state: discord.VoiceState = await interaction.user.fetch_voice()
             voice_channel: discord.VoiceChannel = ta_voice_state.channel
-        except Exception:
+        except discord.NotFound:
             await interaction.response.send_message("You must be in a voice channel to use this command.", ephemeral=True, delete_after=SHORT_TIMEOUT)
             return
         
@@ -149,7 +151,8 @@ class TAQueueControls3(discord.ui.ActionRow[discord.ui.LayoutView]):
             await interaction.response.send_message("You're not currently helping anyone!", ephemeral=True, delete_after=SHORT_TIMEOUT)
             return
 
-        ta_role: discord.Role = get_role(interaction, "TA")
+        ta_role_id: int = server_info_dao.get_id("ta_role_id", interaction.guild.id)
+        ta_role: discord.Role = get(interaction.guild.roles, id=ta_role_id)
         for member in voice_channel.members:
             if ta_role in member.roles:
                 continue
