@@ -63,11 +63,11 @@ async def notify_next_if_changed(client: discord.Client, before: Optional[QueueE
     if before and after and before.user_id != after.user_id:
         await safe_dm_user(client, after.user_id, NEXT_IN_LINE_MSG)
 
-async def update_queue_messages(client: discord.Client) -> None:
+async def update_queue_messages(client: discord.Client, guild: discord.Guild) -> None:
     if hasattr(client, "update_student_status_message"):
-        await client.update_student_status_message()
+        await client.update_student_status_message(guild)
     if hasattr(client, "update_ta_status_message"):
-        await client.update_ta_status_message()
+        await client.update_ta_status_message(guild)
 
 async def move_to_breakout(interaction: discord.Interaction, entry: QueueEntry):
     student: discord.Member = interaction.guild.get_member(entry.user_id)

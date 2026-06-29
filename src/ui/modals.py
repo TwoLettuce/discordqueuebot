@@ -153,7 +153,7 @@ class ClearConfirmModal(discord.ui.Modal, title="Clear Confirmation"):
             # TODO: update queue_history for each student if necessary (add/update a row with done_getting_help_time or time_helped depending on implementation)
 
             await interaction.client.queue.clear()
-            await update_queue_messages(interaction.client)
+            await update_queue_messages(interaction.client, interaction.guild)
             await interaction.response.send_message("Queue cleared", delete_after=60*5)
             for channel in interaction.guild.channels:
                 if channel.name == "help-queue-chat":
@@ -182,7 +182,7 @@ class RemoveConfirmModal(discord.ui.Modal, title="Removal Confirmation"):
         front_before = await interaction.client.queue.get_front()
         user: discord.User = await interaction.client.fetch_user(self.student_user_id)
         await interaction.client.queue.remove(self.student_user_id)
-        await update_queue_messages(interaction.client)
+        await update_queue_messages(interaction.client, interaction.guild)
 
         await notify_next_if_changed(interaction.client, front_before)
         reason_suffix = f" Reason: {self.reason.value}" if self.reason.value else ""

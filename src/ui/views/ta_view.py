@@ -130,7 +130,7 @@ async def dequeue_student(interaction: discord.Interaction, front_before: Option
 
     # Notify the next student in line only if they changed
     await notify_next_if_changed(interaction.client, front_before)
-    await update_queue_messages(interaction.client)
+    await update_queue_messages(interaction.client, interaction.guild)
 
 
 class TAQueueControls3(discord.ui.ActionRow[discord.ui.LayoutView]):
@@ -172,7 +172,7 @@ class TAQueueManagement(discord.ui.ActionRow[discord.ui.LayoutView]):
         if not interaction.client.queue.is_open:
             interaction.client.queue.is_open = True
             await interaction.response.send_message(QUEUE_OPENED, ephemeral=True, delete_after=DEFAULT_TIMEOUT)
-            await update_queue_messages(interaction.client)
+            await update_queue_messages(interaction.client, interaction.guild)
             return
         else:
             await interaction.response.send_message(QUEUE_ALREADY_OPEN, ephemeral=True, delete_after=SHORT_TIMEOUT)
@@ -182,7 +182,7 @@ class TAQueueManagement(discord.ui.ActionRow[discord.ui.LayoutView]):
         if interaction.client.queue.is_open:
             interaction.client.queue.is_open = False
             await interaction.response.send_message(QUEUE_CLOSED, ephemeral=True, delete_after=DEFAULT_TIMEOUT)
-            await update_queue_messages(interaction.client)
+            await update_queue_messages(interaction.client, interaction.guild)
             return
         else:
             await interaction.response.send_message(QUEUE_ALREADY_CLOSED, ephemeral=True, delete_after=SHORT_TIMEOUT)

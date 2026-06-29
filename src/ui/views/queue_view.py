@@ -30,7 +30,7 @@ class QueueRequests(discord.ui.ActionRow[discord.ui.LayoutView]):
 
         if await interaction.client.queue.is_in_queue(interaction.user.id):
             await interaction.client.queue.remove(interaction.user.id)
-            await update_queue_messages(interaction.client)
+            await update_queue_messages(interaction.client, interaction.guild)
             await interaction.response.send_message("Removed from queue.", ephemeral=True, delete_after=DEFAULT_TIMEOUT)
         else:
             await interaction.response.send_message("You aren't currently in the queue", ephemeral=True, delete_after=SHORT_TIMEOUT)
