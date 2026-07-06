@@ -39,13 +39,15 @@ class HelpModal(discord.ui.Modal, title="Request Help"):
             ))
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True, ephemeral=True)
         value = self.in_person.value.lower()
         if value not in ("o", "p"):
-            await interaction.response.send_message(
-                "Join Queue _**Failed**_. Please enter either `o` or `p` to indicate whether you are online or in-person",
-                ephemeral=True,
-                delete_after=20
+            msg = await interaction.followup.send(
+                "_**Could not join queue**_. Please enter either `o` or `p` to indicate whether you are online or in-person",
+                wait=True,
+                ephemeral=True
             )
+            await msg.delete(delay=20)
             return
         
         student_name = self.name.value.strip()
@@ -62,14 +64,15 @@ class HelpModal(discord.ui.Modal, title="Request Help"):
         mode = "In-person" if value == "p" else "Online"
         pos = await interaction.client.queue.get_position(interaction.user.id)
 
-        waiting_room_id = get_id(Channels.WAITING_ROOM_NAME, interaction.guild.id)
+        waiting_room_id = await get_id(Channels.WAITING_ROOM_NAME, interaction.guild.id)
         waiting_room: discord.VoiceChannel = get(interaction.guild.voice_channels, id=waiting_room_id)
 
-        await interaction.response.send_message(
+        msg = await interaction.followup.send(
             f"You are #{pos} in the queue.{f" Please join the {waiting_room.mention} voice channel." if not value=="p" else ""}",
             ephemeral=True,
-            delete_after=60*5
+            wait=True
         )
+        await msg.delete(delay=60*2)
 
         channel_id = await get_id(Channels.TA_TEXT_CHANNEL_NAME, interaction.guild.id)
         ta_channel: discord.TextChannel = get(interaction.guild.channels, id=channel_id)
@@ -91,13 +94,15 @@ class PassoffModal(discord.ui.Modal, title="Request Passoff"):
     in_person = discord.ui.TextInput(label="Online or In-Person? (o/p)", max_length=1)
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(thinking=True, ephemeral=True)
         value = self.in_person.value.lower()
         if value not in ("o", "p"):
-            await interaction.response.send_message(
+            msg = await interaction.followup.send(
                 "_**Could not join queue**_. Please enter `o` or `p` to indicate whether you are online or in-person",
                 ephemeral=True,
-                delete_after=30
+                wait=True
             )
+            await msg.delete(delay=20)
             return
         
         student_name = self.name.value.strip()
@@ -113,11 +118,13 @@ class PassoffModal(discord.ui.Modal, title="Request Passoff"):
         mode = "In-person" if value == "p" else "Online"
         pos = await interaction.client.queue.get_position(interaction.user.id)
 
-        await interaction.response.send_message(
+        msg = await interaction.followup.send(
             f"You are #{pos} in the queue.{f" Please join the {get_channel(interaction, "Waiting Room").mention} voice channel." if not value=="p" else ""}",
             ephemeral=True,
-            delete_after=60*5
+            wait=True
         )
+        await msg.delete(delay=60*2)
+
         channel_id = await get_id(Channels.TA_TEXT_CHANNEL_NAME, interaction.guild.id)
         ta_channel: discord.TextChannel = get(interaction.guild.text_channels, id=channel_id)
         await ta_channel.send(
@@ -136,10 +143,13 @@ class BotIssueModal(discord.ui.Modal, title="Report Bot Problem"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message("The TAs have been notified. They will reach out to you if needed.", ephemeral=True, delete_after=30)
+        await interaction.response.defer(thinking=True, ephemeral=True)
+        msg = await interaction.followup.send("The TAs have been notified. They will reach out to you if needed.", ephemeral=True, wait=True)
+        msg.delete(delay=30)
+
         issue_text = self.description.value.strip()
         await record_bot_issue(interaction.user.mention, issue_text)
-        ta_role = discord.utils.get(interaction.guild.roles, name="TA")
+        ta_role = get(interaction.guild.roles, name="TA")
         ta_mention = ta_role.mention
         for channel in interaction.guild.channels:
             if channel.name == Channels.TA_TEXT_CHANNEL_NAME:

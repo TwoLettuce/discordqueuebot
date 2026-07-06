@@ -307,13 +307,15 @@ bot = Bot()
 
 @bot.tree.command(name="queue")
 async def queue_panel(interaction: discord.Interaction):
-    await interaction.response.send_message(
+    await interaction.response.defer(thinking=True)
+    await interaction.followup.send(
         view=QueueView()
     )
 
 @bot.tree.command(name="ta")
 async def ta_panel(interaction: discord.Interaction):
-    await interaction.response.send_message(
+    await interaction.response.defer(thinking=True)
+    await interaction.followup.send(
         view=TAView()
     )
 
