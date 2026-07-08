@@ -150,12 +150,11 @@ class BotIssueModal(discord.ui.Modal, title="Report Bot Problem"):
         await record_bot_issue(interaction.user.mention, issue_text)
         ta_role = get(interaction.guild.roles, name="TA")
         ta_mention = ta_role.mention
-        for channel in interaction.guild.channels:
-            if channel.name == Channels.TA_TEXT_CHANNEL_NAME:
-                await channel.send(
-                    f"ATTENTION {ta_mention}!\n{interaction.user.mention} is having trouble with the bot! Description: {issue_text}"
-                )
-                break
+        id: int = get_id(Channels.TA_TEXT_CHANNEL_NAME, interaction.guild.id)
+        channel = get(interaction.guild.text_channels, id=id)
+        await channel.send(
+            f"ATTENTION {ta_mention}!\n{interaction.user.mention} is having trouble with the bot! Description: {issue_text}"
+        )
         await msg.delete(delay=Messages.DEFAULT_TIMEOUT)
 
 
@@ -243,7 +242,7 @@ class EditQueueHoursModal(discord.ui.Modal, title="Edit Queue Hours"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer(thinking=True, ephemeral=True)
+        await interaction.response.defer(thinking=True)
         try:
             open_h = int(self.open_hour.value)
             open_m = int(self.open_minute.value)
@@ -263,7 +262,7 @@ class EditQueueHoursModal(discord.ui.Modal, title="Edit Queue Hours"):
             ta_role = get_role(interaction, "TA")
             await interaction.followup.send(
                 f"{ta_role.mention} ANNOUNCEMENT: Queue hours updated: Opens at {open_h:02d}:{open_m:02d}, closes at {close_h:02d}:{close_m:02d}",
-                wait=False
+                ephemeral=False
             )
         except ValueError:
             msg = await interaction.followup.send(
