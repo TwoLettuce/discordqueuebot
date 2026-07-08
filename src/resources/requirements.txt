@@ -3,4 +3,4 @@ python-dotenv
 PyNaCl
 davey
 tzdata
-aiomysql
+aiomysql[rsa]
